@@ -7,7 +7,7 @@ chrome_options.add_argument("--disable-gpu")
 chrome_options.add_argument("--headless")
 # chrome_options.headless = True # also works
 browser = webdriver.Chrome(options=chrome_options)
-browser.get("http://www.facebook.com")
+browser.get("http://www.facebook.com")#
 
 
 #ToDo:
