@@ -1,15 +1,33 @@
 from selenium import webdriver 
+#from selenium import webdriver 
 from selenium.webdriver.chrome.options import Options
+
+from pyvirtualdisplay import Display
+
+display = Display(visible=0, size=(1600, 1200))
+display.start()
+driver = webdriver.Chrome('/usr/lib/chromium-browser/chromedriver')
+
+print(Options())
 chrome_options = Options()
 #chrome_options.add_argument("--disable-extensions")
-chrome_options.add_argument("--disable-gpu")
+#chrome_options.add_argument("--disable-gpu")
 #chrome_options.add_argument("--no-sandbox") # linux only
 chrome_options.add_argument("--headless")
 # chrome_options.headless = True # also works
+
+chrome_options.setBinary("/path/to/other/chrome/binary");
 browser = webdriver.Chrome(options=chrome_options)
-browser.get("http://www.facebook.com")#
 
 
+browser.get("http://www.facebook.com")
+# Step 3) Search & Enter the Email or Phone field & Enter Password
+username = browser.find_element_by_id("email")
+password = browser.find_element_by_id("pass")
+submit   = browser.find_element_by_id("loginbutton")
+username.send_keys("YOUR EMAILID")
+password.send_keys("YOUR PASSWORD")
+browser.get_screenshot_as_file('foo.png')
 #ToDo:
     #
     #SELECTION Find Website/app for search and mark Seasan,  with api + FireTv + website kompatible
