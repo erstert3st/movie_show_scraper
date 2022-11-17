@@ -20,7 +20,7 @@ chrome_options.headless = True # also works
 browser = webdriver.Chrome(options=chrome_options)
 
 
-browser.get("http://www.facebook.com")
+browser.get("https://bs.to/serie/AJ-and-the-Queen")
 # Step 3) Search & Enter the Email or Phone field & Enter Password
 #username = browser.find_element_by_id("email")
 #password = browser.find_element_by_id("pass")
@@ -29,14 +29,15 @@ browser.get("http://www.facebook.com")
 #password.send_keys("YOUR PASSWORD")
 browser.get_screenshot_as_file('foo.png')
 #ToDo:
-    #selenium server
-    #SELECTION Find Website/app for search and mark Seasan,  with api + FireTv + website kompatible
+    #ToDo:  selenium server
+    #ToDo:  SELECTION Find Website/app for search and mark Seasan,  with api + FireTv + website kompatible
 
-    #INPUT bs or api data To DB 
+    #       INPUT bs 
+    #?api   data To DB MOVIES
 
-    #setup db 
+    #ToDo: setup db 
     
-    #
+    #ToDo
     # Chose Hoster 
     # Optionale Option search for Best Quality
     # 2-3 Threaded Link Fetcher To Db -> if see Link once Save!
@@ -58,3 +59,4 @@ browser.get_screenshot_as_file('foo.png')
     #ipod integr
     #spotify enabler
     #
+
