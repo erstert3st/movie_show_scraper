@@ -9,7 +9,6 @@ soup = BeautifulSoup(page.content, "html.parser")
 dataDiv = soup.find("div", {"id": "seasons"})
 dataDiv = dataDiv.find_all("li")
 dataDiv[-1]
-
-print(dataDiv[0].text)
-print(dataDiv[-1.].text)
+print(dataDiv[0])
+print(dataDiv[-1])
      #ToDo DB

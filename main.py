@@ -28,35 +28,41 @@ browser.get("https://bs.to/serie/AJ-and-the-Queen")
 #username.send_keys("YOUR EMAILID")
 #password.send_keys("YOUR PASSWORD")
 browser.get_screenshot_as_file('foo.png')
-#ToDo:
-    #ToDo:  selenium server
     #ToDo:  SELECTION Find Website/app for search and mark Seasan,  with api + FireTv + website kompatible
 
-    #       INPUT bs 
-    #?api   data To DB MOVIES
+    #ToDo:
 
-    #ToDo: setup db 
-    
-    #ToDo
-    # Chose Hoster 
-    # Optionale Option search for Best Quality
-    # 2-3 Threaded Link Fetcher To Db -> if see Link once Save!
-    # Pyload or Jdownloader Download Links
-    # Build structure -> Copy/Check/deleteOld File 
-    # Performance Upgrade -> Fetch 4 -> good Quality -> Start Download -> Build the Rest
-    # Easy Delete/Stop queeded downloads
-    # Workflow Jellyfin Triggern
-    # 
+#Pyt        #       Bs Serie crawler
+#QSR        #?api   data To DB MOVIES
+#Docker             setup db 
+#Pyt        #       season crawler
+#Pyt        #Todo   episode crawler 30%
+#Pyt        #Todo   DB for all 
+#SQL        #ToDo:  tables db 
+#SQL        #Todo DB AUTO generate links + folder structur + generate pyload file
+#Pyt        # ?     Docker/Multithreadet
+#Docker     #ToDo  selenium server
+#git        #Todo   ublock + buster 
+#pyt        #Todo   get api token
+#SQL        #Todo   cache link 
+#Pyt        #Todo   Chose Hoster 
+#SQL        #Todo   analyse link vfor optional quality
+#PYT        #Todo   handle tabs
+#PYT        #Todo   click and find mp4 Link
+#SQL        #Todo   cache link 
+#Docker     #Todo   Pyload/jDownloader API
+#Docker     #Todo   Download Timer/ Manuell starten
+#Docker     #Todo   Jellyfin Api
+#Qst        #Todo   FolderManager ? oO 
+#Docker     #Todo   Docker Composer 
+
 
 #ToDomusic 
 
-    #jellyfin like
-    #spotify integration 
-        #check which main service + playlist + update 
-                                            #spotify/amazon convert playlist  website @ripped
-    #format to apple and mp3
-    #downloder podcast 
-    #ipod integr
-    #spotify enabler
-    #
+#PY             #Deezer scraper for FAC auto 
+#QST            #download auto Playlists
+#Manuell        #sync amz + spot
+#QST            #Auto Playlists
+#QST            #Sync auto Ipod
+
 
