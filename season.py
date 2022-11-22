@@ -12,3 +12,6 @@ dataDiv[-1]
 print(dataDiv[0])
 print(dataDiv[-1])
      #ToDo DB
+
+#pip install mysql-connector-python
+#sudo apt-get install libmariadb3 libmariadb-dev
