@@ -4,8 +4,67 @@ CREATE TABLE IF NOT EXISTS Serien (
     link VARCHAR(255),
     other_links  VARCHAR(255), 
     watcher BOOLEAN DEFAULT '0' NOT NULL, 
-    status varchar(25) NOT NULL CHECK (status IN ('idc','process','done')),
+    status varchar(25) NOT NULL CHECK (status IN ('idc','new','process','done','ERROR')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_changed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    id_season INT #TODO
+    last_changed TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) 
+CREATE TABLE IF NOT EXISTS hoster (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255),
+    regex1 VARCHAR(255),
+    regex2 VARCHAR(255),
+    regex3 VARCHAR(255),
+    status varchar(25) NOT NULL CHECK (status IN ('working','test','ERROR')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_changed TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) 
+
+CREATE TABLE IF NOT EXISTS Staffel (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    serien_id INT,
+    nr VARCHAR(255),
+    name VARCHAR(255),
+    link  VARCHAR(255), 
+    watcher BOOLEAN DEFAULT '0' NOT NULL, 
+    status varchar(25) NOT NULL CHECK (status IN ('idc','new','process','ERROR')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_changed TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) 
+
+CREATE TABLE IF NOT EXISTS Episode (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    season_id INT NOT NULL,
+    nr VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+
+    check_quali BOOLEAN DEFAULT '0' NOT NULL, 
+    link  VARCHAR(255), 
+    link_quali  VARCHAR(255),
+    temp_link VARCHAR(255),  
+    temp_link_quali  VARCHAR(255), 
+
+    watcher BOOLEAN DEFAULT '0' NOT NULL, 
+    status varchar(25) NOT NULL CHECK (status IN ('idc','new','process','ERROR')),
+    error_msg varchar(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_changed TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) 
+
+CREATE TABLE IF NOT EXISTS Movie (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    season_id INT NOT NULL,
+    nr VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    stack_able BOOLEAN DEFAULT '0' NOT NULL, 
+    check_quali BOOLEAN DEFAULT '0' NOT NULL, 
+    link  VARCHAR(255), 
+    link_quali  VARCHAR(255),
+    temp_link VARCHAR(255),  
+    temp_link_quali  VARCHAR(255), 
+
+    watcher BOOLEAN DEFAULT '0' NOT NULL, 
+    status varchar(25) NOT NULL CHECK (status IN ('idc','new','process','ERROR')),
+    error_msg varchar(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_changed TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) 
