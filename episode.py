@@ -1,13 +1,18 @@
 import requests
 from bs4 import BeautifulSoup
+import Database
 #Todo Db
-URL = 'https://bs.to/serie/Die-Simpsons-The-Simpsons/2/de' # may chech over random 
-page = requests.get(URL)
-soup = BeautifulSoup(page.content, "html.parser")
-# get season Data
-dataDiv = soup.find("div", {"id": "seasons"})
-dataDiv = dataDiv.find_all("li")
-dataDiv[-1]
-print(dataDiv[0])
-print(dataDiv[-1])
-     #ToDo DB
+def main(self):
+     crawl_Episode()
+
+def crawl_Episode():
+     URL = 'https://bs.to/serie/Die-Simpsons-The-Simpsons/2/de' # may chech over random 
+     page = requests.get(URL)
+     soup = BeautifulSoup(page.content, "html.parser")
+     # get season Data
+     dataDiv = soup.find("div", {"id": "seasons"})
+     dataDiv = dataDiv.find_all("li")
+     dataDiv[-1]
+     print(dataDiv[0])
+     print(dataDiv[-1])
+          #ToDo DB
