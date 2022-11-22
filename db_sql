@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS Serien (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    link VARCHAR(255),
+    other_links  VARCHAR(255), 
+    watcher BOOLEAN DEFAULT '0' NOT NULL, 
+    status varchar(25) NOT NULL CHECK (status IN ('idc','process','done')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_changed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    id_season INT #TODO
+) 
