@@ -9,8 +9,10 @@
 #Sys        #       Pythen Connector
 #SQL        #       tables structure db 
 #SQL                tables 
-#Pyt        #Todo   episode crawler 90%
 #Pyt                DB for all  
+
+
+#Pyt        #Todo   episode crawler 90%
 #SQL        #Todo   DB AUTO generate links + folder structur + generate pyload file
 #Pyt        # ?     Docker/Multithreadet
 #Docker     #ToDo   selenium server
@@ -26,7 +28,8 @@
 #Docker     #Todo   Download Timer/ Manuell starten
 #Docker     #Todo   Jellyfin Api
 #Qst        #Todo   FolderManager ? oO 
-#Docker     #Todo   Docker Composer 
+#Docker     #Todo   Docker Composer  # mount downloads/ Media Folders for copy data + dockerfile with chrome
+
 
 
 #ToDomusic 
@@ -38,3 +41,9 @@
 #QST            #Sync auto Ipod
 
 
+#next steps bs:
+#Inserts,  Fuck DB xD
+#May Captcha -> selenium Server need to setup -> problem should run on pi 
+#May Get Mp4 #https://gist.github.com/emctoo/2856390
+#May Api jellyfin should check it automaticle 
+#downloader + quali finder own 3 threaded container "Worker"

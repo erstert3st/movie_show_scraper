@@ -1,7 +1,7 @@
 from selenium import webdriver 
 #from selenium import webdriver 
 from selenium.webdriver.chrome.options import Options
-
+from harvester import Harvester, ReCaptchaV2, ReCaptchaV3, hCaptcha, Proxy
 from pyvirtualdisplay import Display
 
 display = Display(visible=0, size=(1600, 1200))
