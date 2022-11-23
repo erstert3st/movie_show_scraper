@@ -5,9 +5,12 @@ from mysql.connector import connect, errorcode, errors
 class Database(object):
     connect_db = None
     cursor = None
-
-    @staticmethod
-    def connection():
+    def __del__(self):
+         if Database.connect_db.is_connected():
+            Database.cursor.close()
+            Database.connect_db.close()
+            print("MySQL connection is closed")
+    def connection(self):
         try:
             Database.connect_db =  mysql.connector.connect(
                                 host="10.0.0.13",
@@ -20,30 +23,40 @@ class Database(object):
             print( Database.cursor)
             print(Database.connect_db)
             print("connected")
+            return True
         except mysql.connector.ProgrammingError as err:
             print("Erro de conexacao com a base de dados")
+#
+#INSERT INTO `Serien`(`id`, `name`, `link`, `other_links`, `watcher`, `status`, `created_at`, `last_changed`) VALUES 
+# ('[value-1]','[value-2]','[value-3]','[value-4]','[value-5]','[value-6]','[value-7]','[value-8]')
+#
 
-    @staticmethod
-    def insert(table, data, values):
-
+    
+    def insertMany(self, sql, values):
         try:
-            my_query = "insert into "+table+" ( "+data +" ) values ("+ values +")"
-            Database.cursor.execute(my_query)
-        except mysql.connector.ProgrammingError as err:
-            if err.errno == errorcode.ER_SYNTAX_ERROR:
-                print("Insert Error")
-            return None
+            #sql = "insert into Serien(name, link, status) values (%s, %s, %s)"  
+           # values = [("testPy1", "test1.Py", "new")] 
+            Database.cursor.executemany(sql, values)
+            Database.connect_db.commit()
+            print("commit")
+        except:
+           # Database.connect_db.rollback()
+            print("Insert Error")
+            return None 
 
-        except AttributeError:
-            print("Bugs Insert: {}".format(AttributeError.args))
+    def insert(sql, values):
+        try:
+            #sql = "insert into Serien(name, link, status) values (%s, %s, %s)"  
+            # values = ("testPy1", "test1.Py", "new") 
+            Database.cursor.execute(sql, values)
+            Database.connect_db.commit()
+            print("commit")
+        except:
+           # Database.connect_db.rollback()
+            print("Insert Error")
+            return None 
 
-        except errors.OperationalError as e:
-            print("Many connection--{}".format(e.msg))
-
-        except mysql.connector.InterfaceError as e:
-            raise mysql.connector.InterfaceError("{} Interface error".format(e.msg))
-    @staticmethod
-    def find_one(select, table, cond, return_value = False):
+    def find_one(self, select, table, cond, return_value = False):
         try:
             my_query = "select " +select+" from " +table+" where " +cond+""
             Database.cursor.execute(my_query)
@@ -172,8 +185,7 @@ class Database(object):
     #     except mysql.connector.ProgrammingError as err:
     #         if err.errno == errorcode.ER_SYNTAX_ERROR:
     #             print("Erro de sintaxe, verfique a consulta SQL!!")
-
-if __name__ == "__main__":
-    Database().connection()
-    print("done")
+#if __name__ == "__main__":
+    #Database().connection()
+  #  print("done")
 #https://github.com/neldomarcelino/museuonline/blob/a06290eaa1874b365af9e58ae2ccbac6eca07f65/src/database/database.py

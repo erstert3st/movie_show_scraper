@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import os
+from Database import Database
 #should only run once 
 
 def Crawl_Page():
@@ -12,17 +13,25 @@ def Crawl_Page():
         
         # finding all li tags in ul and printing the text within it
     dataLi = soup.find_all('li')
-    dataA = []
+    htmlData = []
+    linkList = []
     for single in dataLi:
         tempList = single.find_all('a', href=True)
-        dataA.extend(tempList)
-    for i in range(40): dataA.pop(0)
-    for i in range(5): dataA.pop()
-    for single in dataA:
-        print(single.string +" LINK: www.bs.to/" + single['href'])
+        htmlData.extend(tempList)
+    for i in range(40): htmlData.pop(0)
+    for i in range(5): htmlData.pop()
+    for singleRow in htmlData:
+        linkList.extend([(singleRow.string,"www.bs.to/" + singleRow['href'], "new")])
+        #print(singleRow.string +" LINK: www.bs.to/" + singleRow['href'])
+        #print(singleRow.string +"www.bs.to/" + singleRow['href'])
         #To DB
     # generate Serien 
-    print(len(dataA))
+    sqlInsert = "insert into Serien(name, link, status) values (%s, %s, %s)"  
+    db =  Database()
+    db.connection()
+    db.insertMany(sqlInsert,linkList)
+    print(len(htmlData))
+   # print(len(htmlData))
 
 
 def Crawl_Episode(): # add all hoster may streamkiste/s.to + 1 movie/serie stream site  + cine 
@@ -53,4 +62,4 @@ def Crawl_Seasons():
 #pip install mysql-connector-python
 #sudo apt-get install libmariadb3 libmariadb-dev
 if __name__ == "__main__":
-    Crawl_Seasons()
+    Crawl_Page()

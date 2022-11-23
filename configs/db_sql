@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS Serien (
     link VARCHAR(255),
     other_links  VARCHAR(255), 
     watcher BOOLEAN DEFAULT '0' NOT NULL, 
-    status varchar(25) NOT NULL CHECK (status IN ('idc','new','process','done','ERROR')),
+    status varchar(25) CHECK (status IN ('idc','new','process','done','ERROR', '')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_changed TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) 
