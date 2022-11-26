@@ -55,7 +55,12 @@ class Database(object):
            # Database.connect_db.rollback()
             print("Insert Error")
             return None 
-
+    def findLinkByStatus(self,table,status):
+        sqlQuerry = "SELECT id,link FROM `"+table+"` WHERE status = '"+status+"'; )"  
+        #Todo
+    def updateStatusById(self, table, id, status):
+        sqlQuerry = "UPDATE "+table+" SET status = "+status+" WHERE id="+id
+        
     def find_one(self, select, table, cond, return_value = False):
         try:
             my_query = "select " +select+" from " +table+" where " +cond+""

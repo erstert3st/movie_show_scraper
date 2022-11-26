@@ -21,7 +21,7 @@ def Crawl_Page():
     for i in range(40): htmlData.pop(0)
     for i in range(5): htmlData.pop()
     for singleRow in htmlData:
-        linkList.extend([(singleRow.string,"www.bs.to/" + singleRow['href'], "new")])
+        linkList.extend([(singleRow.string,"www.bs.to/" + singleRow['href'], "idc")])
         #print(singleRow.string +" LINK: www.bs.to/" + singleRow['href'])
         #print(singleRow.string +"www.bs.to/" + singleRow['href'])
         #To DB
@@ -58,6 +58,12 @@ def Crawl_Seasons():
      print(dataDiv[-1])
      # generate seaspns 
           #ToDo DB
+
+
+    
+
+    
+
 
 #pip install mysql-connector-python
 #sudo apt-get install libmariadb3 libmariadb-dev
