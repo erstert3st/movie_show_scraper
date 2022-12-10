@@ -10,8 +10,9 @@
 #SQL        #       tables structure db 
 #SQL                tables 
 #Pyt                DB for all  
-
-
+#           #Todo   if series is in prime/netflix/dinsey download hole thing and update files :D 
+#           #Todo   if DMZ download all with new good resolution ?
+#           #Todo   secure Pi
 #Pyt        #Todo   episode crawler 90%
 #SQL        #Todo   DB AUTO generate links + folder structur + generate pyload file
 #Pyt        # ?     Docker/Multithreadet
@@ -21,9 +22,7 @@
 #SQL        #Todo   cache link 
 #Pyt        #Todo   Chose Hoster 
 #SQL        #Todo   analyse link vfor optional quality
-#PYT        #Todo   handle tabs
 #PYT        #Todo   click and find mp4 Link
-#SQL        #Todo   cache link 
 #Docker     #Todo   Pyload/jDownloader API
 #Docker     #Todo   Download Timer/ Manuell starten
 #Docker     #Todo   Jellyfin Api
