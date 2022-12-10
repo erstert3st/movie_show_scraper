@@ -21,10 +21,4 @@ browser = webdriver.Chrome(options=chrome_options)
 
 
 browser.get("https://bs.to/serie/AJ-and-the-Queen")
-# Step 3) Search & Enter the Email or Phone field & Enter Password
-#username = browser.find_element_by_id("email")
-#password = browser.find_element_by_id("pass")
-#submit   = browser.find_element_by_id("loginbutton")
-#username.send_keys("YOUR EMAILID")
-#password.send_keys("YOUR PASSWORD")
 browser.get_screenshot_as_file('foo.png')

@@ -15,7 +15,8 @@ harvester = Harvester('0.0.0.0', 7777)
 
 then we add an intercepter
 """
-tokens =  harvester.intercept_recaptcha_v2(domain='www.sneakersnstuff.com',sitekey='33f96e6a-38cd-421b-bb68-7806e1764460')
+link = "s.to"
+tokens =  harvester.intercept_recaptcha_v2(domain=link,sitekey='')
 """
 we can also intercept recaptchas!
     tokens = harvester.intercept_recaptcha_v2(domain, sitekey)
@@ -39,7 +40,7 @@ server_thread = Thread(target=harvester.serve, daemon=True)
 server_thread.start()
 
 # launch a browser instance where we can solve the captchas
-harvester.launch_browser()
+harvester.launch_browser(args='--host-rules="MAP bs.to 127.0.0.1:5000"')
 """
 there are a bunch of extra arguments you can pass to tune things exactly how you want then:
     browser: Union[browserModule.BrowserEnum, str] = browserModule.BrowserEnum.CHROME 
