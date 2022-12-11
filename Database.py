@@ -1,7 +1,7 @@
 import mysql
 from mysql.connector import connect, errorcode, errors
 #import uuid
-
+#Add logger
 class Database(object):
     connect_db = None
     cursor = None
