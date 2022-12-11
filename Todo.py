@@ -47,3 +47,16 @@
 #May Get Mp4 #https://gist.github.com/emctoo/2856390
 #May Api jellyfin should check it automaticle  -> automatic chec 
 #downloader + quali finder own 3 threaded container "Worker"
+
+1#fix api pyload/use jdownloader 
+2#get sitekeys
+2#host chooser 
+3#streamkiste find best link + selenium/chooser 
+4#bs.to + selenium/chooser
+6 #cine.to
+5#selenium open links
+6#
+7#
+8
+9
+POT -> Selenium, host chooser, api, 
