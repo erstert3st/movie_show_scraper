@@ -1,3 +1,30 @@
+import shutil
+import ffmpeg
+import os
+class fileManager(object):
+
+    def checkValidVideo(object):
+        #select 10 with status
+        #update
+        #schleife
+        sourcePath=""
+        destPath=""
+        
+        try:
+            (
+                ffmpeg
+                .input(sourcePath)
+                .output("null", f="null")
+                .run()
+            )
+        except ffmpeg._run.Error:
+            #db update to Search other Video because corrption may try one download more ? 
+            return
+        shutil.move(sourcePath, destPath)
+        os.path.exists(destPath)
+        os.remove(sourcePath) 
+        
+            
 import requests
 import json
 import logging
@@ -33,6 +60,9 @@ class api(object):
         with requests.session() as session:
             response=session.post(self.host + "/api/login", data=self.login)
             #chek if doanload is ready then update db 
+            
+    def makeFolder(self,foldername,Movie=False):
+        #
             
        # print(type())
     #Todo, check response
