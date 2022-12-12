@@ -4,9 +4,9 @@ import os
 from Database import Database
 import cloudscraper
 #should only run once 
-
+#MAY need httpsoverhtml
 def Crawl_Page():
-    URL = 'https://bs.to/andere-serien' # may chech over random 
+    URL = 'http://bs.to/andere-serien' # may chech over random 
     page = requests.get(URL)
     soup = BeautifulSoup(page.content, "html.parser")
 
@@ -28,15 +28,14 @@ def Crawl_Page():
         #To DB
     # generate Serien 
     sqlInsert = "insert into Serien(name, link, status) values (%s, %s, %s)"  
-    db =  Database()
-    db.connection()
+    db = Database()
     db.insertMany(sqlInsert,linkList)
     print(len(htmlData))
    # print(len(htmlData))
 
 
 def Crawl_Episode(): # add all hoster may streamkiste/s.to + 1 movie/serie stream site  + cine 
-     URL = 'https://bs.to/serie/Die-Simpsons-The-Simpsons/2/de' # may chech over random 
+     URL = 'http://bs.to/serie/Die-Simpsons-The-Simpsons/2/de' # may chech over random 
      page = requests.get(URL)
      soup = BeautifulSoup(page.content, "html.parser")
      # get season Data
@@ -46,23 +45,37 @@ def Crawl_Episode(): # add all hoster may streamkiste/s.to + 1 movie/serie strea
      print(dataDiv[0])
      print(dataDiv[-1])
     #check hoster avalibale # generate/update episode
-def Crawl_Seasons():
-     URL = 'https://bs.to/serie/Die-Simpsons-The-Simpsons' # may chech over random 
-     page = requests.get(URL)
-     soup = BeautifulSoup(page.content, "html.parser")
-
-     # get season Data
-     dataDiv = soup.find("div", {"id": "seasons"})
-     dataDiv = dataDiv.find_all("li")
+    
+def lol(serie):
+    seasonList = []
+    seasonTe =""
+    URL = "http://"+str(serie[1][4:])
+    page = requests.get(URL)
+    soup = BeautifulSoup(page.content, "html.parser")
+    # get season Data
+    seasonsDiv = soup.find("div", {"id": "seasons"})
+    seasonsDiv = seasonsDiv.find_all("li")
     # dataDiv[-1]
-     print(dataDiv[0])
-     print(dataDiv[-1])
-     # generate seaspns 
-          #ToDo DB
+    for season in seasonsDiv:
+        seasonList.extend([(serie[0], season.string, serie[2], "http://bs.to/" + season.find("a").get('href') , "idc")])
+        #seasonTe = (serie[0], str(season.string), str(serie[2]), "http://bs.to/" + season.find("a").get('href') , "idc")
+        #print(singleRow.string +" LINK: www.bs.to/" + singleRow['href'])
+        #print(singleRow.string +"www.bs.to/" + singleRow['href'])
+        #To DB
+    # generate Serien 
+#    INSERT INTO `Staffel`( `serien_id`, `nr`, `name`, `link`, `status`) VALUES ('10','2','name','www.w.ww','idc'); 
+    sqlInsert = "insert into Staffel(serien_id, nr, name, link, status) values (%s, %s, %s, %s, %s)"  
+    db = Database()
+    db.connection()
+    db.insert(sqlInsert,seasonTe) 
+    print(seasonsDiv[0])
+    print(seasonsDiv[-1])
+    # generate seaspns 
+        #ToDo DB
 
 def search_Streamkiste(serie):
     print("hi")
-    URL = "https://streamkiste.tv/search/" + str(serie)
+    URL = "http://streamkiste.tv/search/" + str(serie)
     #page = requests.get(URL)
     scraper = cloudscraper.create_scraper()  # returns a CloudScraper instance
     soup = BeautifulSoup(scraper.get(URL).content, "html.parser")
@@ -75,15 +88,20 @@ def search_Streamkiste(serie):
 def getWork():
     db =  Database()
     db.connection()
-    #querry = "select " +select+" from " +table+" where " +cond+""
-    serieId = db.select(returnOnlyOne = True, table="Serien", select="ID") 
-    SeasonIds = db.select(table="Serien", select="ID", where= "'ID' = '"+ serieId + "'") 
-    if(len(SeasonIds) < 1):
-        db.updateStatus(sql, Table, Status, id):
-(table="Serien", select="ID", where= "'ID' = '"+ serieId + "'")
-        Crawl_Seasons()
+    #"id,link,name"
+    serienDataList = db.select(returnOnlyOne = False, select="id,link,name", table="Serien") 
+    if(len(serienDataList) < 1):
+        return
+    for serienData in serienDataList:
+        SeasonIds = db.select(table="Staffel", select="ID", where= "`serien_id` = '"+ str(serienData[0]) + "'") 
+        if(len(SeasonIds) < 1):
+            lol(serienData)
+        #return
+        #serieId = db.select(table="Episode", select="ID", where= "`season_id` = '"+ SeasonIds + "'") 
+        #if(len(serieId) < 1):
+         #   Crawl_Episode()
 
 #pip install mysql-connector-python
 #sudo apt-get install libmariadb3 libmariadb-dev
 if __name__ == "__main__":
-    search_Streamkiste("Salamander")
+    getWork()

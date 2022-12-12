@@ -5,11 +5,15 @@ from mysql.connector import connect, errorcode, errors
 class Database(object):
     connect_db = None
     cursor = None
+    def __init__(self):
+        self.connection()
+        
     def __del__(self):
          if Database.connect_db.is_connected():
             Database.cursor.close()
             Database.connect_db.close()
             print("MySQL connection is closed")
+            
     def connection(self):
         try:
             Database.connect_db =  mysql.connector.connect(
@@ -20,8 +24,8 @@ class Database(object):
                                 database="Media"
                                 )
             Database.cursor = Database.connect_db.cursor()
-            print( Database.cursor)
-            print(Database.connect_db)
+#            print( Database.cursor)
+ #           print(Database.connect_db)
             print("connected")
             return True
         except mysql.connector.ProgrammingError as err:
@@ -48,7 +52,9 @@ class Database(object):
         try:
             #sql = "insert into Serien(name, link, status) values (%s, %s, %s)"  
             # values = ("testPy1", "test1.Py", "new") 
+            print("insert into Staffel(serien_id, nr, name, link, status) values (%s, %s, %s, %s, %s)" % (values[0],values[1],values[2],values[3],values[4],))
             Database.cursor.execute(sql, values)
+            
             Database.connect_db.commit()
             print("commit")
         except:
@@ -68,9 +74,9 @@ class Database(object):
             print("update Error")
             return None 
     
-    def select(self,my_query = "", returnOnlyOne = False, table="", select= "*"):
+    def select(self,my_query = "", returnOnlyOne = False, table="", select= "*",  where ="`status` = 'new'"):
         if(len(my_query) < 1):   
-            my_query ="SELECT "+select+" FROM `" +table+"` WHERE `status` = `new` "
+            my_query ="SELECT "+select+" FROM `" +table+"` WHERE "+where
        # my_query = "select " +select+" from " +table+" where " +cond+""
         Database.cursor.execute(my_query)
         if(returnOnlyOne == False):
