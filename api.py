@@ -73,5 +73,5 @@ class api(object):
 if __name__ == "__main__":
     hi = api()
     #hi.test()
-   # hi.sendFiles("test",["https://uptobox.com/link1", "https://pixeldrain.com/u/link2"])
+# hi.sendFiles("test",["https://uptobox.com/link1", "https://pixeldrain.com/u/link2"])
     hi.checkQue()

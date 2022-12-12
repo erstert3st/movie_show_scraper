@@ -72,6 +72,16 @@ def search_Streamkiste(serie):
         print(link['href'])
     link = "hi" 
 
+def getWork():
+    db =  Database()
+    db.connection()
+    #querry = "select " +select+" from " +table+" where " +cond+""
+    serieId = db.select(returnOnlyOne = True, table="Serien", select="ID") 
+    SeasonIds = db.select(table="Serien", select="ID", where= "'ID' = '"+ serieId + "'") 
+    if(len(SeasonIds) < 1):
+        db.updateStatus(sql, Table, Status, id):
+(table="Serien", select="ID", where= "'ID' = '"+ serieId + "'")
+        Crawl_Seasons()
 
 #pip install mysql-connector-python
 #sudo apt-get install libmariadb3 libmariadb-dev

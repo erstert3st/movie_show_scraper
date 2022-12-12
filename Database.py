@@ -44,7 +44,7 @@ class Database(object):
             print("Insert Error")
             return None 
 
-    def insert(sql, values):
+    def insert(self, sql, values):
         try:
             #sql = "insert into Serien(name, link, status) values (%s, %s, %s)"  
             # values = ("testPy1", "test1.Py", "new") 
@@ -55,30 +55,33 @@ class Database(object):
            # Database.connect_db.rollback()
             print("Insert Error")
             return None 
-    def findLinkByStatus(self,table,status):
-        sqlQuerry = "SELECT id,link FROM `"+table+"` WHERE status = '"+status+"'; )"  
-        #Todo
-    def updateStatusById(self, table, id, status):
-        sqlQuerry = "UPDATE "+table+" SET status = "+status+" WHERE id="+id
         
-    def find_one(self, select, table, cond, return_value = False):
+    def updateStatus(self, table, status, id, sql):
         try:
-            my_query = "select " +select+" from " +table+" where " +cond+""
-            Database.cursor.execute(my_query)
-            if(return_value == True):
-                return Database.cursor.fetchall()
-            return 
-        except mysql.connector.ProgrammingError as err:
-            if err.errno == errorcode.ER_SYNTAX_ERROR:
-                print("Erro de sintaxe, verfique a consulta SQL!!")
-            return None
-        except mysql.connector.InterfaceError as e:
-            raise mysql.connector.InterfaceError("{} Interface error".format(e.msg))
+            if(len(sql) < 1):
+                sql = "UPDATE `"+table+"` SET `status` = '"+status+"' WHERE `id` = " + id  
+            Database.cursor.execute(sql)
+            Database.connect_db.commit()
+            print("update commit")
+        except:
+           # Database.connect_db.rollback()
+            print("update Error")
+            return None 
+    
+    def select(self,my_query = "", returnOnlyOne = False, table="", select= "*"):
+        if(len(my_query) < 1):   
+            my_query ="SELECT "+select+" FROM `" +table+"` WHERE `status` = `new` "
+       # my_query = "select " +select+" from " +table+" where " +cond+""
+        Database.cursor.execute(my_query)
+        if(returnOnlyOne == False):
+            return Database.cursor.fetchall()
+        else:
+            return Database.cursor.fetchone()
 
     # @staticmethod
     # def find_group(atributo, coleccao, group):
     #     try:
-    #         my_query = "select {} from {} group by {}".format(atributo, coleccao, group)
+    #         my_query = "select {} from {} group by {}".format(atributo, coleccao,s group)
     #         Database.cursor.execute(my_query)
     #         return Database.cursor.fetchall()
 

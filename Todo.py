@@ -48,13 +48,13 @@
 #May Api jellyfin should check it automaticle  -> automatic chec 
 #downloader + quali finder own 3 threaded container "Worker"
 
-1#fix api pyload/use jdownloader 
+1# api check
 2#get sitekeys
 2#host chooser 
 3#streamkiste find best link + selenium/chooser 
 4#bs.to + selenium/chooser
 6 #cine.to
-5#selenium open links
+5#selenium open links check 
 6#
 7#
 8
