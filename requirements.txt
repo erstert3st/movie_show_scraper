@@ -3,3 +3,10 @@ captcha-harvester
 selenium
 cloudscraper
 ffmpeg
+selenium
+undetected_chromedriver
+xvfbwrapper
+pyvirtualdisplay
+chromedriver_autoinstaller
+SpeechRecognition
+fake_useragent

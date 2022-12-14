@@ -89,8 +89,7 @@ class Fetcher(object):
         db = Database()
         db.connection()
         # "id,link,name"
-        serienDataList = db.select(
-            returnOnlyOne=False, select="id,link,name", table="Serien")
+        serienDataList = db.select(returnOnlyOne=False, select="id,link,name", table="Serien")
         if (len(serienDataList) < 1):
             print("toSomething")
         for serienData in serienDataList:
