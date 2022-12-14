@@ -46,10 +46,11 @@
 
 1# 
 2#get sitekeys
-2#host chooser 
+2#host chooser 90% done
+
 3#streamkiste find best link + selenium/chooser 
-4#bs.to + selenium/chooser
-6 #cine.to
+4#bs.to + selenium
+6#cine.to
 5#selenium open links check 
 6#
 7#

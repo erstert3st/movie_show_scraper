@@ -9,10 +9,11 @@ class Database(object):
         self.connection()
         
     def __del__(self):
-         if Database.connect_db.is_connected():
-            Database.cursor.close()
-            Database.connect_db.close()
-            print("MySQL connection is closed")
+       #  if Database.connect_db.is_connected():
+         #   Database.cursor.close()
+         #   Database.connect_db.close()
+          #  print("MySQL connection is closed")
+        print("fixme")
             
     def connection(self):
         try:
@@ -62,7 +63,7 @@ class Database(object):
             print("Insert Error")
             return None 
         
-    def updateStatus(self, table, status, id, sql):
+    def updateStatus(self, table, status, id, sql=""):
         try:
             if(len(sql) < 1):
                 sql = "UPDATE `"+table+"` SET `status` = '"+status+"' WHERE `id` = " + id  
