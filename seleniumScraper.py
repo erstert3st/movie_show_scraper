@@ -2,73 +2,110 @@ from bs4 import BeautifulSoup as soup
 import undetected_chromedriver.v2 as uc
 from selenium.webdriver.common.by import By
 import time
-#import requests
 import random
-from fake_useragent import UserAgent
 from xvfbwrapper import Xvfb
 import speech_recognition as sr
 from pydub import AudioSegment
 import urllib.request
 from Database import Database
+#from Helper import FileManager 
 '''
 ua = UserAgent()
 userAgent = ua.random
 print(userAgent)
 '''
+
+#/opt/google/chrome/google-chrome   add export LANGUAGE=DE_at
 class seleniumCrawler(object):
 
     def __init__(self):
+        from fake_useragent import UserAgent
         options = uc.ChromeOptions()
         #options.headless = False
-        useAgent = UserAgent()
-        options.user_data_dir = "default"
+        ua = UserAgent()
+        user_agent = ua.random
+        options.user_data_dir = "user-data-dir=/home/user/.config/google-chrome/Profile 1"
+        options.add_argument("user-data-dir=/home/user/.config/google-chrome/Profile 1")
         options.add_argument("--lang=en-GB")
-        options.add_argument(f'user-agent={useAgent.random}')
+
+        #options.add_argument(f'user-agent={user_agent}')
         #options.user_data_dir = "/home/user/chromeuserDir"
+        self.title=""
         vdisplay = Xvfb(width=1920, height=1080, visible=0)
-        browser = uc.Chrome(options=self.options)
+        self.browser = uc.Chrome(options=options)
         hoster_list = ["vivo.sx", "streamtape.", "vupload.", "voe.", "vidlox."]
 
+    def pressPlayandSearchLink(self, div="hoster-player",tag="Video"):
+        link=""
+        while True:
+            self.browser.find_element(By.XPATH,"//div[@class='"+div+"']").click()
+            time.sleep(1)
+            if self.adCheck() == False:
+                try:
+                    self.browser.switch_to.frame(self.browser.find_element(By.XPATH,"//*[@id='root']/section/div[9]/iframe"))        
+                    link = self.browser.find_element(By.TAG_NAME,tag).get_attribute('src') #adjust
+                    if link != "":
+                        return link 
+                        break
+                except:
+                    print("iframe is not ready")
 
-    def detectLink(self, className="hoster-player"):
-        page_soup = soup(self.browser.page_source, "html.parser")
-        url = page_soup.find("div", {"class": className}).next 
-        return url['src']
 
-    def adCheck(self):
-        if len(self.browser.window_handles) > 1:
-            self.browser.close()
-                    #self.browser.switch_to.window(self.browser.window_handles[1]) 
+    def checkVideoLink(self, className="hoster-player"):
+        #add db regex
+        videElementg = self.pressPlayandSearchLink()
+        req = urllib.request.urlopen(urllib.request.Request(videElementg, method='HEAD'))
+        filesize = 0
+        if req.status == 200:
+            filesize = req.headers['Content-Length']
+        else:
+            filesize = -1
+            #status may invalid
+        mb = int(filesize)/1048576
+        print("{} MB".format(mb))
+        return 
+
+    def adCheck(self, ):
+        if len(self.browser.window_handles) == 1: return False
+        size = len(self.browser.window_handles) - 1
+        for counter, item in enumerate(reversed(self.browser.window_handles)):
+            self.browser.switch_to.window(self.browser.window_handles[size - counter]) 
+            if self.title !=  self.browser.title:
+                self.browser.close() # close tab 
+                time.sleep(1)
+        self.browser.switch_to.window(self.browser.window_handles[0])
 
     def get_link(self,url):
             #if url(url.contains("streamZZ"))
-            self.browser.get(url + "/VOE")
-            #print(url + "/VOE")
+            self.browser.get(url ) # add lang
+            #self.adCheck() #fix useragent and profile
+            #print(url)
             time.sleep(4)
             self.browser.maximize_window()
+            self.title=self.browser.title
             self.browser.find_element(By.XPATH,"html/body").click()
             time.sleep(2)
             self.adCheck()
             # scroll to the button and click it
             #self.browser.click()
-            time.sleep(2)
+            time.sleep(3)
             self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
             time.sleep(2)
-            #self.browser.click()
             self.browser.find_element(By.XPATH,"//div[@class='hoster-player']").click()
-            time.sleep(12)
+            self.browser.find_element(By.XPATH,"//div[@class='hoster-player']").click()
+            time.sleep(12) # replace with find
             self.adCheck()
-            #print(self.browser.current_url)
+            self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
             #self.browser.save_screenshot("pics/" + str(y) + ".png")
-        
             # switching to the iframe
             try: 
-                iframe = self.browser.find_element(By.XPATH,"//iframe[@title='recaptcha challenge']")            
+                iframe = self.browser.find_element(By.XPATH,"//iframe[@title='recaptcha challenge expires in two minutes']")            
+                if iframe.is_displayed() == False: raise Exception()
             except:
                 className = ""
-                if len(self.browser.window_handles) > 1:
+                if len(self.browser.window_handles) < 2:
                     className = "hoster-player" # Fix with other links
-                self.detectLink(className)
+                self.checkVideoLink(className)
                 return
             #CAptcha part
 
@@ -97,10 +134,10 @@ class seleniumCrawler(object):
             #print("current browser url: " + self.browser.current_url)
 
             self.detectLink()
-            #DB Insert
+            #DB Insert  hoster-player
 
 
-    def captchaSolver(url):
+    def captchaSolver(self, url):
         urllib.request.urlretrieve(url, "audio.mp3")
 
         sound = AudioSegment.from_mp3("audio.mp3")
@@ -117,7 +154,8 @@ class seleniumCrawler(object):
 if __name__=="__main__":
     letsGo = seleniumCrawler()
     db = Database()
-    link = db.select(table="Episode", select="ID, name, link"))
+    #link = db.select(table="Episode", select="ID, name, link")
+    link = "https://bs.to/serie/Die-Simpsons-The-Simpsons/1/5-Bart-schlaegt-eine-Schlacht/de/Streamtape"
     # with Xvfb(width=1920, height=1080) as xvfb:
-   # for link in linkList:
+    # for link in linkList:
     link = letsGo.get_link(link)

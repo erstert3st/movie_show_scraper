@@ -1,9 +1,9 @@
 import shutil
 import ffmpeg
 import os
-class fileManager(object):
+class FileManager(object):
 
-    def checkValidVideo(object):
+    def checkValidVideo(self, file):
         #select 10 with status
         #update
         #schleife
@@ -70,8 +70,8 @@ class api(object):
     #Todo, check if download is ready 
     #Todo, move file 
 
-if __name__ == "__main__":
-    hi = api()
-    #hi.test()
-# hi.sendFiles("test",["https://uptobox.com/link1", "https://pixeldrain.com/u/link2"])
-    hi.checkQue()
+        if __name__ == "__main__":
+            hi = api()
+            #hi.test()
+        # hi.sendFiles("test",["https://uptobox.com/link1", "https://pixeldrain.com/u/link2"])
+            hi.checkQue()

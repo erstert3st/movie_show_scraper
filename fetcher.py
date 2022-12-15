@@ -6,7 +6,6 @@ import cloudscraper
 # should only run once
 # MAY need httpsoverhtml
 
-
 class Fetcher(object):
     def Crawl_Page(self):
         URL = 'http://bs.to/andere-serien'  # may chech over random
@@ -105,6 +104,8 @@ class Fetcher(object):
             self.Crawl_Episode(seasonData)
             db.updateStatus(table="Staffel", status="process",
                             id=seasonData[0])
+
+        
 
     # pip install mysql-connector-python
     # sudo apt-get install libmariadb3 libmariadb-dev
