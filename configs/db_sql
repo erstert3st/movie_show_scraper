@@ -41,8 +41,9 @@ CREATE TABLE IF NOT EXISTS Episode (
     check_quali BOOLEAN DEFAULT '0' NOT NULL, 
     bs_link  VARCHAR(255), 
     avl_hoster VARCHAR(255), 
-    best_link VARCHAR(255),
+    link VARCHAR(255),
     link_quali  VARCHAR(255),
+    temp_link  VARCHAR(255),
     temp_link_quali  VARCHAR(255), 
     watcher BOOLEAN DEFAULT '0' NOT NULL, 
     status varchar(25) NOT NULL,
@@ -69,3 +70,20 @@ CREATE TABLE IF NOT EXISTS Movie (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_changed TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) 
+CREATE OR REPLACE VIEW Files AS SELECT
+    Serien.id AS serien_id,
+    Staffel.id AS staffel_id,
+    Episode.id AS episode_id,
+     Episode.name AS serien_name,
+    Staffel.nr AS staffel_nr,
+    Episode.name AS episode_name,
+    Episode.nr AS episode_nr,
+    CONCAT(   REPLACE(Serien.name, ' ', '.'), "-S", Staffel.nr ,"-E", Episode.nr,"-", REPLACE(Episode.name, ' ', '.'),".mp4") AS filename, 
+    Episode.pid,
+    Episode.link,
+    Episode.link_quali,
+    Episode.status
+FROM
+    Episode
+INNER JOIN Staffel ON Episode.season_id = Staffel.id
+INNER JOIN Serien ON Staffel.serien_id = Serien.id;

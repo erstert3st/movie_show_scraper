@@ -1,1 +1,20 @@
 CREATE VIEW Files AS SELECT Serien.name as serien_name , Episode.name as episode_name, Staffel.nr as staffel_Num, Episode.nr as episode_Num , Episode.pid,Episode.best_link as link,Episode.link_quali ,Episode.status FROM Episode INNER JOIN Staffel ON Episode.season_id=Staffel.id INNER Join Serien On Staffel.serien_id=Serien.id;
+
+
+CREATE OR REPLACE VIEW Files AS SELECT
+    Serien.id AS serien_id,
+    Staffel.id AS staffel_id,
+    Episode.id AS episode_id,
+     Episode.name AS serien_name,
+    Staffel.nr AS staffel_nr,
+    Episode.name AS episode_name,
+    Episode.nr AS episode_nr,
+    CONCAT(   REPLACE(Serien.name, ' ', '.'), "-S", Staffel.nr ,"-E", Episode.nr,"-", REPLACE(Episode.name, ' ', '.'),".mp4") AS filename, 
+    Episode.pid,
+    Episode.best_link AS link,
+    Episode.link_quali,
+    Episode.status
+FROM
+    Episode
+INNER JOIN Staffel ON Episode.season_id = Staffel.id
+INNER JOIN Serien ON Staffel.serien_id = Serien.id;

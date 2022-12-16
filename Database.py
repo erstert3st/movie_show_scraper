@@ -5,111 +5,127 @@ from mysql.connector import connect, errorcode, errors
 class Database(object):
 
     def __init__(self):
-        self.connection()
         self.connect_db = None
         self.cursor = None
+        self.connection()
+
     def __del__(self):
-       #  if Database.connect_db.is_connected():
-         #   Database.cursor.close()
-         #   Database.connect_db.close()
+       #  if  self.connect_db.is_connected():
+         #   self.cursor.close()
+         #    self.connect_db.close()
           #  print("MySQL connection is closed")
         print("fixme")
             
     def connection(self):
         try:
-            Database.connect_db =  mysql.connector.connect(
+            self.connect_db =  self.connect_db =  mysql.connector.connect(
                                 host="10.0.0.13",
                                 #host="localhost:3306",
                                 user="user",
                                 password="password",
                                 database="Media"
                                 )
-            Database.cursor = Database.connect_db.cursor()
-#            print( Database.cursor)
- #           print(Database.connect_db)
+            self.cursor =  self.connect_db.cursor()
             print("connected")
             return True
-        except mysql.connector.ProgrammingError as err:
+        except mysql.connector.Error as err:
             print("Erro de conexacao com a base de dados")
-#
-#INSERT INTO `Serien`(`id`, `name`, `link`, `other_links`, `watcher`, `status`, `created_at`, `last_changed`) VALUES 
-# ('[value-1]','[value-2]','[value-3]','[value-4]','[value-5]','[value-6]','[value-7]','[value-8]')
-#
-
-    
+        
     def insertMany(self, sql, values):
         try:
             #sql = "insert into Serien(name, link, status) values (%s, %s, %s)"  
-           # values = [("testPy1", "test1.Py", "new")] 
-            Database.cursor.executemany(sql, values)
-            Database.connect_db.commit()
+            print(sql % values[0])
+            self.cursor.executemany(sql, values)
+            self.connect_db.commit()
             print("commit")
-        except:
-           # Database.connect_db.rollback()
-            
-            print("Insert Error")
-            return None 
-    def inserttest(self, sql, values):
-        try:
-            #sql = "insert into Serien(name, link, status) values (%s, %s, %s)"  
-            for value in values:
-                Database.cursor.execute(sql, value)
-                Database.connect_db.commit()
-                print("commit")
-        except:
-            print(Database.cursor._last_executed)
-            print("Insert Error")
-            return None
+        except mysql.connector.Error as error:
+            print("Failed to insert into MySQL table {}".format(error))
+        return
 
+    def insertTest(self, sql, data):
+        try:
+            print(sql % data)
+            #print()
+            self.cursor.execute(sql,data)
+            self.connect_db.commit()
+            return 
+        except mysql.connector.Error as error:
+            print("Failed to insert into MySQL table {}".format(error))
+        return
     def insert(self, sql, values):
         try:
             #sql = "insert into Serien(name, link, status) values (%s, %s, %s)"  
             # values = ("testPy1", "test1.Py", "new") 
             #print("insert into Staffel(serien_id, nr, name, link, status) values (%s, %s, %s, %s, %s)"
-            Database.cursor.execute(sql, values)
+            print(sql % values)
+            self.cursor.execute(sql, values)
             
-            Database.connect_db.commit()
+            self.connect_db.commit()
             print("commit")
-        except:
-           # Database.connect_db.rollback()
-            print("Insert Error")
-            return None 
+        except mysql.connector.Error as error:
+            print("Failed to insert into MySQL table {}".format(error))
+        return
         
     #std udate status
     def update(self, table, status, id, sql=""):
         try:
             if(len(sql) < 1):
                 sql = "UPDATE `"+table+"` SET `status` = '"+status+"' WHERE `id` = " + id  
-            Database.cursor.execute(sql)
-            Database.connect_db.commit()
+            self.cursor.execute(sql)
+            self.connect_db.commit()
             print("update commit")
-        except:
-           # Database.connect_db.rollback()
-            print("update Error")
-            return None 
+        except mysql.connector.Error as error:
+            print("Failed to insert update MySQL table {}".format(error))
+        return
     
     def getHoster(self):
-        fuckingList = self.select(select="name",table="hoster", where=" 1 ORDER BY priority;")#fix
-        hi = []
-        for host in fuckingList: hi.append(host[0]) #.lower()
-        return hi
+        try:
+            self.cursor.execute("select `name` from `hoster` where `status` = 'working' ORDER BY priority")
+            hosterList = [item[0] for item in self.cursor.fetchall()]
+            return hosterList  # return array of Values
+            
+        except mysql.connector.Error as error:
+            print("Failed to select MySQL table {}".format(error))
+        return
 
     def select(self,my_query = "", returnOnlyOne = False, table="", select= "*",  where ="`status` = 'new'"):
-        if(len(my_query) < 1):   
-            my_query ="SELECT "+select+" FROM `" +table+"` WHERE "+where
-       # my_query = "select " +select+" from " +table+" where " +cond+""
-        Database.cursor.execute(my_query)
-        if(returnOnlyOne == False):
-            return Database.cursor.fetchall()
-        else:
-            return Database.cursor.fetchone()
+        try:
+            if(len(my_query) < 1):   
+                my_query ="SELECT "+select+" FROM `" +table+"` WHERE "+where
+        # my_query = "select " +select+" from " +table+" where " +cond+""
+            self.cursor.execute(my_query)
+            if(returnOnlyOne is False):
+                return self.cursor.fetchall()
+            else:
+                return self.cursor.fetchone()
+        except mysql.connector.Error as error:
+            print("Failed to select table {}".format(error))
+        return
 
+    
+    def selectEpisodeData(self): # make procedure
+        return self.select("""SELECT 
+        SELECT
+            Episode.id,
+            Staffel.name,
+            Episode.name,
+            Episode.bs_link,
+            Episode.avl_hoster,
+            Episode.link,
+            Episode.link_quali,
+            Episode.temp_link,
+            Episode.temp_link_quali
+        FROM
+            `Episode`
+        INNER JOIN Staffel ON Episode.season_id = Staffel.id
+        WHERE
+            Episode.status = 'waiting' AND Episode.avl_hoster IS NOT NULL""")
     # @staticmethod
     # def find_group(atributo, coleccao, group):
     #     try:
     #         my_query = "select {} from {} group by {}".format(atributo, coleccao,s group)
-    #         Database.cursor.execute(my_query)
-    #         return Database.cursor.fetchall()
+    #         self.cursor.execute(my_query)
+    #         return self.cursor.fetchall()
 
 
     #     except mysql.connector.ProgrammingError as err:
@@ -126,8 +142,8 @@ class Database(object):
     # def find_one_only(atributo, coleccao, condicao):
     #     try:
     #         my_query = "select {} from {} where {}".format(atributo, coleccao, condicao)
-    #         Database.cursor.execute(my_query)
-    #         return Database.cursor.fetchone()
+    #         self.cursor.execute(my_query)
+    #         return self.cursor.fetchone()
     #     except mysql.connector.ProgrammingError as err:
     #         if err.errno == errorcode.ER_SYNTAX_ERROR:
     #             print("Erro de sintaxe, verfique a consulta SQL!!")
@@ -146,8 +162,8 @@ class Database(object):
     # @staticmethod
     # def find_by_query(query):
     #     try:
-    #         Database.cursor.execute(query)
-    #         return Database.cursor.fetchall()
+    #         self.cursor.execute(query)
+    #         return self.cursor.fetchall()
 
     #     except mysql.connector.ProgrammingError as err:
     #         if err.errno == errorcode.ER_SYNTAX_ERROR:
@@ -164,8 +180,8 @@ class Database(object):
     # def find(atributo, coleccao):
     #     try:
     #         my_query = "select {} from {}".format(atributo, coleccao)
-    #         Database.cursor.execute(my_query)
-    #         return Database.cursor.fetchall()
+    #         self.cursor.execute(my_query)
+    #         return self.cursor.fetchall()
     #     except mysql.connector.ProgrammingError as err:
     #         if err.errno == errorcode.ER_SYNTAX_ERROR:
     #             print("Erro de sintaxe, verfique a consulta SQL!!")
@@ -176,7 +192,7 @@ class Database(object):
     # def update_one(atributo, colleccao, condicao):
     #     try:
     #         my_query = "update {} set {} where {}".format(colleccao, atributo, condicao)
-    #         Database.cursor.execute(my_query)
+    #         self.cursor.execute(my_query)
     #     except mysql.connector.ProgrammingError as err:
     #         raise err.msg
 
@@ -197,7 +213,7 @@ class Database(object):
     # def update_all(atributo, colleccao):
     #     try:
     #         my_query = "update {} set {}".format(colleccao, atributo)
-    #         Database.cursor.execute(my_query)
+    #         self.cursor.execute(my_query)
     #     except mysql.connector.ProgrammingError as err:
     #         if err.errno == errorcode.ER_SYNTAX_ERROR:
     #             print("Erro de sintaxe, verfique a consulta SQL!!")
@@ -206,7 +222,7 @@ class Database(object):
     # def delete_all(coleccao):
     #     try:
     #         my_query = "delete {}".format(coleccao)
-    #         Database.cursor.execute(my_query)
+    #         self.cursor.execute(my_query)
     #     except mysql.connector.ProgrammingError as err:
     #         if err.errno == errorcode.ER_SYNTAX_ERROR:
     #             print("Erro de sintaxe, verfique a consulta SQL!!")
@@ -215,7 +231,7 @@ class Database(object):
     # def delete_one(coleccao, condicao):
     #     try:
     #         my_query =  "delete from {} where {}".format(coleccao,condicao)
-    #         Database.cursor.execute(my_query)
+    #         self.cursor.execute(my_query)
     #     except mysql.connector.ProgrammingError as err:
     #         if err.errno == errorcode.ER_SYNTAX_ERROR:
     #             print("Erro de sintaxe, verfique a consulta SQL!!")

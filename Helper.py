@@ -11,23 +11,18 @@ import json
 class FileManager(object):
     
     def checkVideoSize(self, videoLink):
-        # select 10 with status
-        # update
-        # schleife
-        fileData = []
+        fileData = "noIdea" 
         try:
             # use widh beause Movies are different
-            filesize = ffmpeg.probe(videoLink)["streams"][0]['width']
-            fileData.extend(filesize)
-            return str(filesize)
+            metaData = ffmpeg.probe(videoLink)
+            width = str(metaData["streams"][0]['width'])
+            #height = str(metaData["streams"][0]['height'])
+            sizeMB = str(int(metaData["format"]['size'])/1048576)
+            fileData = width +","+ str(sizeMB)
+            return fileData
         except:
-            # db update to Search other Video because corrption may try one download more ?
-            print("no fucking idea")
-        filesize = requests.head(videoLink).headers['Content-Length']
-        mb = int(filesize)/1048576
-        print("{} MB".format(mb))
-        return 
-
+             print("ffmpeg Error")
+        return fileData
     def checkValidVideo(self, file, sourcePath,destPath):
         try:
             (

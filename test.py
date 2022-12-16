@@ -1,3 +1,4 @@
 from Fetcher import fetch
-hi = fetch()
-hi.Crawl_Page()
+hi = "lol"
+hi2 = hi.split(',')
+print(hi2)
