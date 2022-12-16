@@ -1,1 +1,1 @@
-top -o RES
+CREATE VIEW Files AS SELECT Serien.name as serien_name , Episode.name as episode_name, Staffel.nr as staffel_Num, Episode.nr as episode_Num , Episode.pid,Episode.best_link as link,Episode.link_quali ,Episode.status FROM Episode INNER JOIN Staffel ON Episode.season_id=Staffel.id INNER Join Serien On Staffel.serien_id=Serien.id;
