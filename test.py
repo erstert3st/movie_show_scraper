@@ -1,5 +1,3 @@
-import cloudscraper
-from bs4 import BeautifulSoup
-
-hi = "10"
-print (int(hi))
+from Fetcher import fetch
+hi = fetch()
+hi.Crawl_Page()

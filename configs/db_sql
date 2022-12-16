@@ -27,25 +27,25 @@ CREATE TABLE IF NOT EXISTS Staffel (
     name VARCHAR(255),
     link  VARCHAR(255), 
     watcher BOOLEAN DEFAULT '0' NOT NULL, 
-    status varchar(25) NOT NULL CHECK (status IN ('idc','new','process','ERROR')),
+    status varchar(25) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_changed TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) 
-
+-- status varchar(25) NOT NULL CHECK (status IN ('idc','new','process','ERROR')), change id to int
 CREATE TABLE IF NOT EXISTS Episode (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    season_id INT NOT NULL,
+    season_id VARCHAR(255) NOT NULL,
     nr VARCHAR(255) NOT NULL,
     name VARCHAR(255) NOT NULL,
-
+    pid VARCHAR(255) UNIQUE,
     check_quali BOOLEAN DEFAULT '0' NOT NULL, 
-    link  VARCHAR(255), 
+    bs_link  VARCHAR(255), 
+    avl_hoster VARCHAR(255), 
+    best_link VARCHAR(255),
     link_quali  VARCHAR(255),
-    temp_link VARCHAR(255),  
     temp_link_quali  VARCHAR(255), 
-
     watcher BOOLEAN DEFAULT '0' NOT NULL, 
-    status varchar(25) NOT NULL CHECK (status IN ('idc','new','process','ERROR')),
+    status varchar(25) NOT NULL,
     error_msg varchar(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_changed TIMESTAMP DEFAULT CURRENT_TIMESTAMP

@@ -7,8 +7,6 @@ from xvfbwrapper import Xvfb
 import speech_recognition as sr
 from pydub import AudioSegment
 import urllib.request
-from Database import Database
-#from Helper import FileManager 
 '''
 ua = UserAgent()
 userAgent = ua.random
@@ -16,23 +14,22 @@ print(userAgent)
 '''
 
 #/opt/google/chrome/google-chrome   add export LANGUAGE=DE_at
-class seleniumCrawler(object):
+class SeleniumScraper(object):
 
     def __init__(self):
         from fake_useragent import UserAgent
-        options = uc.ChromeOptions()
+        self.options = uc.ChromeOptions()
         #options.headless = False
         ua = UserAgent()
         user_agent = ua.random
-        options.user_data_dir = "user-data-dir=/home/user/.config/google-chrome/Profile 1"
-        options.add_argument("user-data-dir=/home/user/.config/google-chrome/Profile 1")
-        options.add_argument("--lang=en-GB")
+        self.options.user_data_dir = "user-data-dir=/home/user/.config/google-chrome/Profile 1"
+        self.options.add_argument("user-data-dir=/home/user/.config/google-chrome/Profile 1")
+        self.options.add_argument("--lang=en-GB")
 
         #options.add_argument(f'user-agent={user_agent}')
         #options.user_data_dir = "/home/user/chromeuserDir"
         self.title=""
         vdisplay = Xvfb(width=1920, height=1080, visible=0)
-        self.browser = uc.Chrome(options=options)
         hoster_list = ["vivo.sx", "streamtape.", "vupload.", "voe.", "vidlox."]
 
     def pressPlayandSearchLink(self, div="hoster-player",tag="Video"):
@@ -50,22 +47,7 @@ class seleniumCrawler(object):
                 except:
                     print("iframe is not ready")
 
-
-    def checkVideoLink(self, className="hoster-player"):
-        #add db regex
-        videElementg = self.pressPlayandSearchLink()
-        req = urllib.request.urlopen(urllib.request.Request(videElementg, method='HEAD'))
-        filesize = 0
-        if req.status == 200:
-            filesize = req.headers['Content-Length']
-        else:
-            filesize = -1
-            #status may invalid
-        mb = int(filesize)/1048576
-        print("{} MB".format(mb))
-        return 
-
-    def adCheck(self, ):
+    def adCheck(self):
         if len(self.browser.window_handles) == 1: return False
         size = len(self.browser.window_handles) - 1
         for counter, item in enumerate(reversed(self.browser.window_handles)):
@@ -76,6 +58,7 @@ class seleniumCrawler(object):
         self.browser.switch_to.window(self.browser.window_handles[0])
 
     def get_link(self,url):
+            self.browser = uc.Chrome(options=self.options)
             #if url(url.contains("streamZZ"))
             self.browser.get(url ) # add lang
             #self.adCheck() #fix useragent and profile
@@ -105,8 +88,8 @@ class seleniumCrawler(object):
                 className = ""
                 if len(self.browser.window_handles) < 2:
                     className = "hoster-player" # Fix with other links
-                self.checkVideoLink(className)
-                return
+                linkwithData = self.pressPlayandSearchLink()
+                return linkwithData
             #CAptcha part
 
             self.browser.switch_to.frame(iframe)
@@ -133,7 +116,7 @@ class seleniumCrawler(object):
             time.sleep(5)
             #print("current browser url: " + self.browser.current_url)
 
-            self.detectLink()
+            self.checkVideoLink()
             #DB Insert  hoster-player
 
 
@@ -151,11 +134,5 @@ class seleniumCrawler(object):
     def findLink():
         print("toido")
 
-if __name__=="__main__":
-    letsGo = seleniumCrawler()
-    db = Database()
-    #link = db.select(table="Episode", select="ID, name, link")
-    link = "https://bs.to/serie/Die-Simpsons-The-Simpsons/1/5-Bart-schlaegt-eine-Schlacht/de/Streamtape"
-    # with Xvfb(width=1920, height=1080) as xvfb:
-    # for link in linkList:
-    link = letsGo.get_link(link)
+
+

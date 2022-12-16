@@ -1,13 +1,13 @@
 import mysql
 from mysql.connector import connect, errorcode, errors
-#import uuid
-#Add logger
+#Todo init self.db
+#Todo logger
 class Database(object):
-    connect_db = None
-    cursor = None
+
     def __init__(self):
         self.connection()
-        
+        self.connect_db = None
+        self.cursor = None
     def __del__(self):
        #  if Database.connect_db.is_connected():
          #   Database.cursor.close()
@@ -46,14 +46,26 @@ class Database(object):
             print("commit")
         except:
            # Database.connect_db.rollback()
+            
             print("Insert Error")
             return None 
+    def inserttest(self, sql, values):
+        try:
+            #sql = "insert into Serien(name, link, status) values (%s, %s, %s)"  
+            for value in values:
+                Database.cursor.execute(sql, value)
+                Database.connect_db.commit()
+                print("commit")
+        except:
+            print(Database.cursor._last_executed)
+            print("Insert Error")
+            return None
 
     def insert(self, sql, values):
         try:
             #sql = "insert into Serien(name, link, status) values (%s, %s, %s)"  
             # values = ("testPy1", "test1.Py", "new") 
-            print("insert into Staffel(serien_id, nr, name, link, status) values (%s, %s, %s, %s, %s)" % (values[0],values[1],values[2],values[3],values[4],))
+            #print("insert into Staffel(serien_id, nr, name, link, status) values (%s, %s, %s, %s, %s)"
             Database.cursor.execute(sql, values)
             
             Database.connect_db.commit()
@@ -63,7 +75,8 @@ class Database(object):
             print("Insert Error")
             return None 
         
-    def updateStatus(self, table, status, id, sql=""):
+    #std udate status
+    def update(self, table, status, id, sql=""):
         try:
             if(len(sql) < 1):
                 sql = "UPDATE `"+table+"` SET `status` = '"+status+"' WHERE `id` = " + id  
@@ -75,6 +88,12 @@ class Database(object):
             print("update Error")
             return None 
     
+    def getHoster(self):
+        fuckingList = self.select(select="name",table="hoster", where=" 1 ORDER BY priority;")#fix
+        hi = []
+        for host in fuckingList: hi.append(host[0]) #.lower()
+        return hi
+
     def select(self,my_query = "", returnOnlyOne = False, table="", select= "*",  where ="`status` = 'new'"):
         if(len(my_query) < 1):   
             my_query ="SELECT "+select+" FROM `" +table+"` WHERE "+where

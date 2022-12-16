@@ -1,15 +1,34 @@
+import http.client as http_client
+import logging
+import json
+import requests
 import shutil
 import ffmpeg
 import os
-class FileManager(object):
+import json
 
-    def checkValidVideo(self, file):
-        #select 10 with status
-        #update
-        #schleife
-        sourcePath=""
-        destPath=""
-        
+
+class FileManager(object):
+    
+    def checkVideoSize(self, videoLink):
+        # select 10 with status
+        # update
+        # schleife
+        fileData = []
+        try:
+            # use widh beause Movies are different
+            filesize = ffmpeg.probe(videoLink)["streams"][0]['width']
+            fileData.extend(filesize)
+            return str(filesize)
+        except:
+            # db update to Search other Video because corrption may try one download more ?
+            print("no fucking idea")
+        filesize = requests.head(videoLink).headers['Content-Length']
+        mb = int(filesize)/1048576
+        print("{} MB".format(mb))
+        return 
+
+    def checkValidVideo(self, file, sourcePath,destPath):
         try:
             (
                 ffmpeg
@@ -18,24 +37,34 @@ class FileManager(object):
                 .run()
             )
         except ffmpeg._run.Error:
-            #db update to Search other Video because corrption may try one download more ? 
+            # db update to Search other Video because corrption may try one download more ?
             return
         shutil.move(sourcePath, destPath)
         os.path.exists(destPath)
-        os.remove(sourcePath) 
-        
-            
-import requests
-import json
-import logging
-import http.client as http_client
-class api(object):
-        # Class variable  
-      
+        os.remove(sourcePath)
+
+
+#if __name__ == "__main__":#
+   # hi = FileManager()
+    # hi.test()
+# hi.sendFiles("test",["https://uptobox.com/link1", "https://pixeldrain.com/u/link2"])
+   # hi.checkVideoSize()
+
+
+class Api(object):
+    # Class variable
+
     def __init__(self):
-        self.host =  "http://10.0.0.13:8111"
-        self.login={'username':"admin" ,'password':"password"}
+        self.host = "http://10.0.0.13:8111"
+        self.login = {'username': "admin", 'password': "password"}
         self.setLogger()
+        self.session = self.startApi()
+        
+    def __del__(self):
+        self.session.close()
+
+
+
     def setLogger(self):
         http_client.HTTPConnection.debuglevel = 1
         # You must initialize logging, otherwise you'll not see debug output.
@@ -44,34 +73,42 @@ class api(object):
         requests_log = logging.getLogger("requests.packages.urllib3")
         requests_log.setLevel(logging.DEBUG)
         requests_log.propagate = True
-      
-    def sendFiles(self, foldername, links): # array for links
-        with requests.session() as session:
-            response=session.post(self.host + "/api/login", data=self.login)
-            #payload={'name':foldername ,'links':["https://uptobox.com/link1", "https://pixeldrain.com/u/link2"]} # array
-            payload={'name':foldername ,'links':links, } # array           
-            payloadJSON = {k: json.dumps(v) for k, v in payload.items()}
-            response = session.post(self.host + "/api/addPackage", data=payloadJSON)
-            print(response.text)
-            #if response == ok -> update db 
-            response.close()
-    
-    def checkQue(self):
-        with requests.session() as session:
-            response=session.post(self.host + "/api/login", data=self.login)
-            #chek if doanload is ready then update db 
-            
-    def makeFolder(self,foldername,Movie=False):
-        #
-            
-       # print(type())
-    #Todo, check response
-    #Todo, check if connection
-    #Todo, check if download is ready 
-    #Todo, move file 
 
-        if __name__ == "__main__":
-            hi = api()
-            #hi.test()
-        # hi.sendFiles("test",["https://uptobox.com/link1", "https://pixeldrain.com/u/link2"])
-            hi.checkQue()
+
+    def sendFiles(self, foldername, links): # array for links
+        response=self.session.post(self.host + "/api/login", data=self.login)
+        #payload={'name':foldername ,'links':["https://uptobox.com/link1", "https://pixeldrain.com/u/link2"]} # array
+        payload={'name':foldername ,'links':links, } # array           
+        payloadJSON = {k: json.dumps(v) for k, v in payload.items()}
+        response = self.session.post(self.host + "/api/addPackage", data=payloadJSON)
+        print(response.text)
+        #if response == ok -> update db 
+        response.close()
+        return (response.text)
+
+    def checkCompleteQue(self):
+        session =self.startApi()
+        response = session.post(self.host + "/api/login", data=self.login)
+        response = session.post(self.host + "/api/getQueueData")  
+        #response = session.post(self.host + "/api/getPackageData", data={'pid': pid})         
+        print(response)
+        response.close()
+
+    def isPidInQue(self, pid):
+        session = self.startApi()
+        response = session.post(self.host + "/api/statusDownloads") 
+        downloadList = response.json()
+        for file in downloadList:
+            if(file['packageID'] == pid):
+                return True
+        return False
+    
+    def startApi(self):
+        session = requests.Session()
+        response = session.post(self.host + "/api/login", data=self.login)
+        return session
+# if __name__ == "__main__":
+#     hi = Api()
+#     # hi.test()
+#     pid = hi.sendFiles("test",["https://868418907.tapecontent.net/radosgw/1jzL8VrYj9TewZ2/_s4urcsElZathUqEivRydCjodmThCCllbyGbKFCOuUFAx7xVZ6-I0h27RdrBFOAp30OeXYJXkU2sdN-oIGCbz02l-1ETuu7om0vbKkkU88E5mNcb7saDToshPITd4Vfot_fkR_QZq4pd559LEbX1MH4EWUIVv7K6OffcnJTlbgHge8St71ozb4uXlKZKztUO9VvTPg013x1pT9GUEdDmTai-87nkLEAbXU3dQR5UebYebriEZh580mRbKZv55PhzAZTQOcnCYnt5effSmcKZlyTacsuD8SJvsqs9enKeuXsLT4y_coa-DWdDRxMqcJkWTjMaV8YVUpPBM42TMIzRIhzdnnh91hYUN1KnEQ/Die+Simpsons.S23E04.Das.Ding.das.aus.Ohio.kam.German.Dubbed.HDTV.XviD-ITG.avi.mp4?stream=1"])
+#     hi.isPidInQue(int(pid))
