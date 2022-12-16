@@ -67,7 +67,7 @@ class Database(object):
         return
         
     #std udate status
-    def update(self, table, status, id, sql=""):
+    def update(self, table="", status="", id="", sql=""):
         try:
             if(len(sql) < 1):
                 sql = "UPDATE `"+table+"` SET `status` = '"+status+"' WHERE `id` = " + id  

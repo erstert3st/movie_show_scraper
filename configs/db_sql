@@ -87,3 +87,5 @@ FROM
     Episode
 INNER JOIN Staffel ON Episode.season_id = Staffel.id
 INNER JOIN Serien ON Staffel.serien_id = Serien.id;
+WHERE
+    Episode.status = "done"

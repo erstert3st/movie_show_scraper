@@ -24,20 +24,27 @@ class main(object):
 
         episodList = db.selectEpisodeData()
 
-        for episode in episodList:
-            link = selenium.get_link(episode[3], episode[4].split(','))
+        for counter, episode in enumerate(episodList):
+            hoster =  episode[4].split(',')
+            link = selenium.get_link(episode[3])
             linkWithMeta = fileManager.checkVideoSize(link)
-            if episode[5] == None:
+            status = "waiting"
+            if episode[5] != None:temp="temp_"
+            if counter == len(episodList):status="bs_done"
+            sql = "UPDATE `Episode` SET `"+temp+"link` = '"+link+"', `"+temp+"link_quali`= "+linkWithMeta+", \
+            `status` = '"+status+"'  WHERE `id` = "  + episode[0]
+            db.update(sql = sql)
 
-            sql = "UPDATE `Episode` SET `temp_link` = '"+link+"', `temp_link_quali`= "+linkWithMeta+", `status` = 'bs'  WHERE `id` = "  # + id
-            # db.updateStatus
-            episodeDownloadList = db.select(table="Episode", select="ID, nr ,name, best_link")
-
-        # Todo View Select
+        fileList = db.select(sql = "select * from Files")
         api = Api()
-        for epDownloadLink in episodeDownloadList:
-            api.sendFiles(epDownloadLink[0], epDownloadLink[3])
+        for file in fileList:
+                            #episodeId        #filename without .mp4    #link      
+            api.sendFiles(  fileList[2] +","+ fileList[7][:-4],         fileList[9] )
 
+        #Todo : File Renamer Logik Probl is download ready ? may pythen way or Api  
+        #Todo : Captcha Solver 1 mal durchlaufen/vergleichen mit s.to
+        #Todo : Error if Hoster link is down 
+        #Todo : May Status in api and download done ? 
         # pip install mysql-connector-python
         # sudo apt-get install libmariadb3 libmariadb-dev
 if __name__ == "__main__":
