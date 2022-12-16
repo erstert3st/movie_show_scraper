@@ -12,16 +12,18 @@ class FileManager(object):
     
     def checkVideoSize(self, videoLink):
         fileData = "noIdea" 
+        size = 0
         try:
             # use widh beause Movies are different
             metaData = ffmpeg.probe(videoLink)
-            width = str(metaData["streams"][0]['width'])
+            width =","+ str(metaData["streams"][0]['width'])
             #height = str(metaData["streams"][0]['height'])
-            sizeMB = str(int(metaData["format"]['size'])/1048576)
-            fileData = width +","+ str(sizeMB)
-            return fileData
+            size = int(metaData["format"]['size'])
+            
         except:
-             print("ffmpeg Error")
+            size = requests.head(videoLink).headers['Content-Length']
+        sizeMB =  str(int(size)/1048576) # second int remove decimal 
+        fileData = str(sizeMB) +  width  #fix width  
         return fileData
     def checkValidVideo(self, file, sourcePath,destPath):
         try:

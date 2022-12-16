@@ -86,6 +86,7 @@ CREATE OR REPLACE VIEW Files AS SELECT
 FROM
     Episode
 INNER JOIN Staffel ON Episode.season_id = Staffel.id
-INNER JOIN Serien ON Staffel.serien_id = Serien.id;
+INNER JOIN Serien ON Staffel.serien_id = Serien.id
 WHERE
-    Episode.status = "done"
+    Episode.status != "new"
+  AND  Episode.status != "idc"

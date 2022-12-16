@@ -103,8 +103,8 @@ class Database(object):
         return
 
     
-    def selectEpisodeData(self): # make procedure
-        return self.select("""SELECT 
+    def selectFileData(self): # make procedure
+        return self.select(""" 
         SELECT
             Episode.id,
             Staffel.name,
@@ -119,7 +119,7 @@ class Database(object):
             `Episode`
         INNER JOIN Staffel ON Episode.season_id = Staffel.id
         WHERE
-            Episode.status = 'waiting' AND Episode.avl_hoster IS NOT NULL""")
+            Episode.status = 'waiting' AND Episode.avl_hoster IS NOT NULL ORDER BY RAND()""")
     # @staticmethod
     # def find_group(atributo, coleccao, group):
     #     try:
