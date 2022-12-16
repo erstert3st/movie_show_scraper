@@ -25,7 +25,7 @@
 #Qst        #Todo   FolderManager ? oO 
 #Docker     #Todo   Docker Composer  # mount downloads/ Media Folders for copy data + dockerfile with chrome
 #Docker     #Todo  Chrome Docker + dns + buster + ublock :D much fun 
-
+set
 
 
 #ToDomusic 
