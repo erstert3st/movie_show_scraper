@@ -6,8 +6,7 @@ import shutil
 import ffmpeg
 import os
 import json
-
-
+from Exception import *
 class FileManager(object):
     
     def checkVideoSize(self, videoLink):
@@ -21,10 +20,20 @@ class FileManager(object):
             size = int(metaData["format"]['size'])
             
         except:
-            size = requests.head(videoLink).headers['Content-Length']
-        sizeMB =  str(int(size)/1048576) # second int remove decimal 
+            print("vidoza is shit")
+            try:
+            #req1 = requests(videoLink)
+                req = requests.head(videoLink)
+                size = req.headers['Content-Length']
+            except:
+                #except requests.exceptions.Timeout as err :
+                raise videoBroken
+
+        if size == 0: raise videoBroken 
+        sizeMB =  str(int(int(size)/1048576)) # second int remove decimal 
         fileData = str(sizeMB) +  width  #fix width  
         return fileData
+
     def checkValidVideo(self, file, sourcePath,destPath):
         try:
             (
@@ -71,11 +80,13 @@ class Api(object):
         requests_log.setLevel(logging.DEBUG)
         requests_log.propagate = True
 
-
-    def sendFiles(self, foldername, links): # array for links
+    #edit for movies
+    def sendFiles(self, foldername, link, seasonId,seasonNr,serieName=""): # array for links
         response=self.session.post(self.host + "/api/login", data=self.login)
         #payload={'name':foldername ,'links':["https://uptobox.com/link1", "https://pixeldrain.com/u/link2"]} # array
-        payload={'name':foldername ,'links':links, } # array           
+        if link[8:18] == "streamtape":
+            foldername = seasonId +",_"+serieName+"_,Season"+seasonNr
+        payload={'name':foldername ,'links':link.split(), } # array           
         payloadJSON = {k: json.dumps(v) for k, v in payload.items()}
         response = self.session.post(self.host + "/api/addPackage", data=payloadJSON)
         print(response.text)

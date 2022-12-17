@@ -1,5 +1,4 @@
-from Fetcher import fetch
-hi = "lolsadasd"
-hi2 = hi.split(',')
-print(hi2)
-#-user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Safari/605.1.15 --flag-switches-begin --flag-switches-end
+import cloudscraper
+scraper = cloudscraper.create_scraper()
+i = scraper.get("https://streamtape.com/get_video?id=xPgbO0OVVYIkkqx&expires=1671302502&ip=F0ySKRWSFS9XKxR&token=jxAO0udPsmKG&stream=1")
+print(i)

@@ -67,7 +67,7 @@ class Database(object):
         return
         
     #std udate status
-    def update(self, table="", status="", id="", sql=""):
+    def update(self, table="", status="", id="", sql="", error=""):
         try:
             if(len(sql) < 1):
                 sql = "UPDATE `"+table+"` SET `status` = '"+status+"' WHERE `id` = " + id  
@@ -103,7 +103,7 @@ class Database(object):
         return
 
     
-    def selectFileData(self): # make procedure
+    def selectEpisodeData(self): # make procedure
         return self.select(""" 
         SELECT
             Episode.id,
@@ -119,7 +119,7 @@ class Database(object):
             `Episode`
         INNER JOIN Staffel ON Episode.season_id = Staffel.id
         WHERE
-            Episode.status = 'waiting' AND Episode.avl_hoster IS NOT NULL ORDER BY RAND()""")
+            Episode.season_id = '42' AND Episode.status = 'waiting' AND Episode.avl_hoster IS NOT NULL  AND Episode.avl_hoster <> '' ORDER BY RAND()""")
     # @staticmethod
     # def find_group(atributo, coleccao, group):
     #     try:

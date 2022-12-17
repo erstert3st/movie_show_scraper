@@ -74,7 +74,7 @@ CREATE OR REPLACE VIEW Files AS SELECT
     Serien.id AS serien_id,
     Staffel.id AS staffel_id,
     Episode.id AS episode_id,
-     Episode.name AS serien_name,
+    Staffel.name AS serien_name,
     Staffel.nr AS staffel_nr,
     Episode.name AS episode_name,
     Episode.nr AS episode_nr,
@@ -87,6 +87,5 @@ FROM
     Episode
 INNER JOIN Staffel ON Episode.season_id = Staffel.id
 INNER JOIN Serien ON Staffel.serien_id = Serien.id
-WHERE
-    Episode.status != "new"
-  AND  Episode.status != "idc"
+WHERE Episode.link IS NOT NULL AND Episode.link <> '' AND
+ Episode.status != "new" AND Episode.status != "idc" AND Episode.status != "waiting";

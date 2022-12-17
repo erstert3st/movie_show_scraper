@@ -8,143 +8,170 @@ import speech_recognition as sr
 from pydub import AudioSegment
 import urllib.request
 from fake_useragent import UserAgent
+from  Exception import *
 '''
 ua = UserAgent()
 userAgent = ua.random
 print(userAgent)
 '''
-
-#/opt/google/chrome/google-chrome   add export LANGUAGE=DE_at
 class SeleniumScraper(object):
 
     def __init__(self):
         self.url = ""
 
     def __del__(self):
-        self.closeBroser()
-    def get_link(self,url,host):
-            self.setChromeData()
-            self.browser = uc.Chrome(options=self.options)
-            # for host in hoster:
-            self.url = url+ "/" + host
-            #if url(url.contains("streamZZ"))
-            self.browser.get(self.url) # add lang
-            #Todo#fix useragent and profile
-            print("browser open")
-            time.sleep(4)
-            self.browser.maximize_window()
-            self.title=self.browser.title
-            self.scrollAndClick()
-            print("first scroll/click done")
-            self.adCheck()
+        self.closeBrowser()
 
-            #self.browser.save_screenshot("pics/" + str(y) + ".png")
-            # switching to the iframe
-            try: 
-                while len(self.browser.find_elements(By.XPATH,"//iframe[@title='recaptcha challenge expires in two minutes']")) == 0:
-                        print("wait for captcha")
-                        self.scrollAndClick()
-            except:
-                breakpoint()
-                print("something weird happens")
-            time.sleep(2)
-            iframe = self.browser.find_element(By.XPATH,"//iframe[@title='recaptcha challenge expires in two minutes']")
-            if iframe.is_displayed() is False:
-                return self.pressPlayandSearchLink()
-            print("captcha found")
-            time.sleep(random.randint(50, 90))
-            self.browser.switch_to.frame(iframe)
-            #self.browser.save_screenshot("pics/" + str(y) + ".png")
-            #print("switching to the recaptcha iframe")
-            # clicking to request the audio challange
-            self.browser.find_element(By.XPATH,'//*[@id="recaptcha-audio-button"]').click()
-            # sending the mp3 link to the api
-            #print("requesting the audio recaptcha")
-            time.sleep(3)
-            page_soup = soup(self.browser.page_source, "html.parser")
-            link = page_soup.find("a", {"class": "rc-audiochallenge-tdownload-link"})
-            audio_url = link["href"]
-            #print("recieving the audio captcha link:" + audio_url)
-            # verifying the answer
-            req = self.captchaSolver(audio_url)
-            print("answer of the audio captcha: " + req.text)
-            print("answer of the audio captcha: " + req)
-            time.sleep(random.randint(5, 9))
-            # answer_input
-            input = self.browser.find_element(By.XPATH,'//*[@id="audio-response"]')
-            input.send_keys(req)
-            time.sleep(2)
-            # submit_button
-            self.browser.find_element(By.XPATH,'//*[@id="recaptcha-verify-button"]').click()
-            time.sleep(5)
-            #print("current browser url: " + self.browser.current_url)
-
-            return self.pressPlayandSearchLink()
-            #DB Insert  hoster-player
-#Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36
     def setChromeData(self):
         ua = UserAgent()
-        self.url = ""
-        self.Browser = ""
-        self.title=""
+        self.url, self.Browser, self.title = "","",""
         self.options = uc.ChromeOptions()
-        #self.options.add_argument("-user-agent='"+ua.random+"'")
+        # self.options.add_argument("-user-agent='"+ua.random+"'")
         self.options.user_data_dir = "/home/user/.config/google-chrome"
-        #'User-Agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Safari/605.1.15'
         #vdisplay = Xvfb(width=1920, height=1080, visible=0)
         #hoster_list = ["vivo.sx", "streamtape.", "vupload.", "voe.", "vidlox."]
 
-    def closeBroser(self):
+    def closeBrowser(self):
         self.browser.quit()
 
-    def pressPlayandSearchLink(self, div="hoster-player",tag="Video"):
-        link=""
-        while True:
-            self.browser.find_element(By.XPATH,"//div[@class='"+div+"']").click()
-            time.sleep(1)
-            if self.adCheck() is False:
-                try:
-                    self.browser.switch_to.frame(self.browser.find_element(By.XPATH,"//*[@id='root']/section/div[9]/iframe"))        
-                    link = self.browser.find_element(By.TAG_NAME,tag).get_attribute('src') #adjust
-                    if link != "":
-                        return link 
-                        break
-                except:
-                    print("iframe is not ready")
+    def get_link(self, url, host):
+        self.url = ""
+        self.setChromeData()
+        self.browser = uc.Chrome(options=self.options)
+        self.url = url + "/" + host
+        self.browser.get(self.url)  # add lang
+        print("browser open")
+        time.sleep(4)
+        # self.browser.maximize_window()
+        self.title = self.browser.title
+        print("title:" + self.title)
+        self.tryToPress("/html/body")
+        print("first scroll/click done") #
+        #self.tryToPress() # check bug
+
+        #self.browser.save_screenshot("pics/" + str(y) + ".png")
+        for x in range(0, 5):
+            self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
+            if self.tryToPress(xpath="//iframe[@title='recaptcha challenge expires in two minutes']", dryRun=True) == True:
+                break
+
+            if self.tryToPress() == True:
+                if x > 4:
+                     return self.playAndSearchLink() # no captcha
+                continue
+
+        self.checkIframe()
+        return self.playAndSearchLink() 
+        
+    def solveCaptcha(self, iframe):
+
+        time.sleep(random.randint(5, 15))
+        # return "restart"
+        self.browser.switch_to.frame(iframe)
+        #self.browser.save_screenshot("pics/" + str(y) + ".png")
+        print("switching to the recaptcha iframe")
+        # clicking to request the audio challange
+        self.browser.find_element(By.XPATH, '//*[@id="recaptcha-audio-button"]').click()
+        time.sleep(3)
+        #may solve without soup
+
+        audio_url = self.browser.find_elements(By.CLASS_NAME, "rc-audiochallenge-tdownload-link")[0].get_attribute('href')
+        time.sleep(1) 
+        if len(audio_url) < 1: raise captchaLock
+        # verifying the answer
+        solution = self.captchaSolver(audio_url)
+        time.sleep(random.randint(5, 9))
+        # answer_input
+        self.browser.find_element(By.ID, 'audio-response').send_keys(solution)
+        time.sleep(2)
+        # submit_button
+        self.browser.find_element(By.XPATH, '//*[@id="recaptcha-verify-button"]').click()
+        time.sleep(5)
+
+
+    def checkIframe(self,iframe="//iframe[@title='recaptcha challenge expires in two minutes']"):
+        iframe = self.browser.find_element(By.XPATH,iframe)
+        if iframe.is_displayed() == False:
+            return 
+        print("captcha found")
+        self.solveCaptcha(iframe)
+        self.browser.switch_to.default_content()
+
+    def playAndSearchLink(self, tag="Video"):
+        print("playAndSearchLink")
+        link = []
+        for x in range(0, 25):
+            if self.tryToPress(dryRun=True) is True:
+            
+                time.sleep(3)
+                if  self.scrollAndClick() == False:
+                    try:
+                        #self.browser.switch_to.frame(self.browser.find_element(By.XPATH, "//*[@id='root']/section/div[9]/iframe"))
+                        self.browser.switch_to.frame(self.browser.find_element(By.CSS_SELECTOR, "#root > section > div.hoster-player > iframe"))
+                        link = self.browser.find_element(By.TAG_NAME, tag).get_attribute('src')  # adjust
+                        #if(len(link) == 0)
+
+                        if len(link) > 0:
+                            self.browser.switch_to.default_content()
+                            self.browser.get(link)  # add lang
+                            time.sleep(7)
+                            print("found link (Y): " + link )
+                            return self.browser.title
+                    except:
+                        if self.browser.find_element(By.XPATH, "/html/body").text == "File was deleted": # Vidoza old fehlen Streamtabe 
+                            raise videoBroken 
+                        self.browser.switch_to.default_content()
+                        print("iframe is not ready")
+        raise Exception("iframe or source not found")
 
     def adCheck(self):
-        print("startadCheck")
-        if len(self.browser.window_handles) == 1: 
-            print("no Add found")
+        print("startADCheck")
+        #weird Bug some links always dont refresh title
+        try:
+            self.browser.title
+        except:
+            self.browser.switch_to.window(self.browser.window_handles[0])
+            time.sleep(1)
+        if len(self.browser.window_handles) == 1 or self.title[0:10] == self.browser.title[0:10]:
+            print(self.title[0:10]+ " - "+ self.browser.title[0:10])
+            print("no active ad tab found")
+            time.sleep(3)
             return False
         size = len(self.browser.window_handles) - 1
         for counter, item in enumerate(reversed(self.browser.window_handles)):
-            self.browser.switch_to.window(self.browser.window_handles[size - counter]) 
-            if self.title !=  self.browser.title:
+            self.browser.switch_to.window(self.browser.window_handles[size - counter])
+            time.sleep(3)
+            if self.title[0:10] != self.browser.title[0:10]:
                 print("Close ad")
-                self.browser.close() # close tab 
+                time.sleep(3)
+                self.browser.close()  # close tab
                 time.sleep(1)
-        try:        
+        try:
             self.browser.switch_to.window(self.browser.window_handles[0])
         except:
             print("Cant find browser")
             self.setChromeData()
             self.get_link(self.url)
             return
-            print("Close ad")
 
-    def scrollAndClick(self):
+    def scrollAndClick(self, div="//div[@class='hoster-player']"):
+        print("scrollAndClick->" + div)
         self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
-        self.browser.find_element(By.XPATH,"//div[@class='hoster-player']").click()                    
+        time.sleep(2)
+        self.browser.find_element(By.XPATH,div).click()
+        print("click done")
+        time.sleep(2)
+        return self.adCheck()
+   
+    def tryToPress(self,xpath="//div[@class='hoster-player']", dryRun=False):
         time.sleep(1)
-        self.adCheck()
-
-    
-
+        if len(self.browser.find_elements(By.XPATH, xpath)) > 0:
+                if dryRun is True: return True 
+                self.scrollAndClick(xpath)
+        return False
 
     def captchaSolver(self, url):
-        urllib.request.urlretrieve(url, "audio.mp3") # Ask why
-
+        urllib.request.urlretrieve(url, "audio.mp3")  # Ask why
         sound = AudioSegment.from_mp3("audio.mp3")
         sound.export("song.wav", format="wav")
 
@@ -152,9 +179,6 @@ class SeleniumScraper(object):
         with sr.AudioFile("song.wav") as source:
             audio = r.record(source)
             return r.recognize_google(audio)
-
-    def findLink():
-        print("toido")
-
-
-
+#if __name__ == "__main__":
+  #  hi = SeleniumScraper()
+ #   hi.get_link("https://bs.to/serie/Die-Rosenheim-Cops/1/11-Suesse-Lust/de","Vidoza")

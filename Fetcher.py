@@ -1,5 +1,4 @@
 import cloudscraper
-import cloudscraper
 from bs4 import BeautifulSoup
 from Database import *
 
