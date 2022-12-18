@@ -4,7 +4,7 @@ from Fetcher import fetch
 from Database import Database
 from SeleniumScraper import SeleniumScraper
 from  Exception import *
-import requests
+from fake_useragent import UserAgent
 ##
 import time
 import random
@@ -36,55 +36,66 @@ class main(object):
         for seasonData in seasonList:
             fetcher.Crawl_Episode(seasonData)
             db.update(table="Staffel", status="process", id=str(seasonData[0]))
-        link = ""
+        link , botDedect = "", ""
+        ErrorCounter = 0
         episodList = db.selectEpisodeData()
-        self.killChrome()
+        self.changeUa()
         for counter , episode in  enumerate(episodList):
-            if isinstance(episode[4], str) is True: # can be removed if selectEpisodeData is fixed
-                hosterList = episode[4].split(',')
-                for counterHoster, hoster in enumerate(reversed(hosterList)):
-                    try:
-                        self.killChrome()
-                        time.sleep(2)
-                    # link = SeleniumScraper().get_link("https://bs.to/serie/How-I-Met-Your-Mother/8/11-Verhext-1/de/","Vidoza")
-                        link = SeleniumScraper().get_link(episode[3], hoster,anwesend=False)
-                        linkWithMeta = fileManager.checkVideoSize(link)
-                        #check if first or second + should compare size 
-                        temp= "" if episode[5] == None else "temp_" 
+            hosterList = episode[4].split(',')
+            for  hoster in reversed(hosterList):
+                try:
+                    self.killChrome()
+                    time.sleep(2)
+                # link = SeleniumScraper().get_link("https://bs.to/serie/How-I-Met-Your-Mother/8/11-Verhext-1/de/","Vidoza")
+                    link = SeleniumScraper(ua=botDedect).get_link(episode[3], hoster,anwesend=True)
+                    linkWithMeta = fileManager.checkVideoSize(link)
+                    #check if first or second + should compare size 
+                    print("found link: " + link)
+                    linkWithMeta = "bug"
+                    temp= "" if episode[5] == None else "temp_" 
 
-                        status= "bs" if episode[5] == None else "bs_done"  
-                        #Fixme
-                        sql = "UPDATE `Episode` SET `"+temp+"link` = '"+link+"', `"+temp+"link_quali`= '"+linkWithMeta+"', \
-                        `status` = '"+status+"'  WHERE `id` = "  + str(episode[0])
-                        
-                        db.update(sql = sql)
-                        lenEpList=len(episodList)
-                        print("scrapping: " + str(lenEpList) +"  Website  done: "+ str(counter + 1))
-                        time.sleep(random.randint(2, 15))
-                        self.killChrome()
-                    # if(lenEpList == counter + 1) # make stop or own handler 
-                        #    break
-                        time.sleep(random.randint(60, 75))
-                        #time.sleep(random.randint(60, 120))
+                    status= "bs" if episode[5] == None else "bs_done"  
+                    #Fixme
+                    sql = "UPDATE `Episode` SET `"+temp+"link` = '"+link+"', `"+temp+"link_quali`= '"+linkWithMeta+"', \
+                    `status` = '"+status+"'  WHERE `id` = "  + str(episode[0])
                     
+                    db.update(sql = sql)
+                    lenEpList=len(episodList)
+                    print("scrapping: " + str(lenEpList) +"  Website  done: "+ str(counter + 1))
+                    time.sleep(random.randint(20, 37))
+                    self.killChrome()
+                    #time.sleep(random.randint(175, 235))
+                    time.sleep(random.randint(60, 120))
+                
 
-                    except videoBroken as err:
-                        print(err)
-                        hosterList.remove(hoster) 
-                        hostString = ','.join(hosterList)
-                        sql = db.update(table="Episode", \
-                        status="waiting' ,`avl_hoster`= '"+ hostString +"' , `error_msg` = 'error "+hoster+" down",  id = str(episode[0]))
-                        continue
-                    except captchaLock as err:
-                        print(err)
-                        time.sleep(random.randint(234, 335))
-                        break
+                except videoBroken as err:
+                    print(err)
+                    hosterList.remove(hoster) 
+                    hostString = ','.join(hosterList)
+                    sql = db.update(table="Episode", \
+                    status="waiting' ,`avl_hoster`= '"+ hostString +"' , `error_msg` = 'error "+hoster+" down",  id = str(episode[0]))
+                    continue
+                except captchaLock as err:
+                    print(err)
+                    time.sleep(random.randint(234, 335))
+                    break
+                except botDetection as err:
+                    ErrorCounter = ErrorCounter +1
+                    waitFor = random.randint(200, 335)
+                    if ErrorCounter > 5:
+                        print("Do many Errors")
+                        exit(1)
+                    elif ErrorCounter > 2:
+                        waitFor = random.randint(600, 800)
+                    botDedect = self.changeUa()
+                    print("Errors wait for: " + str(waitFor))
+                    time.sleep(waitFor)
+                    break
 
+                except:
+                    continue
 
-                    except:
-                        continue
-
-        if False:         
+        if True:         
             fileList = db.select(my_query = "select * from Files Where pid is NULL OR pid = '' AND Status != 'download'") # make readable
             api = Api()
             for file in fileList:
@@ -94,7 +105,7 @@ class main(object):
                 seasonId=str(file[1]),seasonNr=file[4],serieName = file[3].replace(" ", "-"))
                 
                 
-                #db.update(table="Episode", status="download' , `pid` = '"+pid+" ", id = episodId)
+                db.update(table="Episode", status="download' , `pid` = '"+pid+" ", id = episodId)
         
         
         
@@ -107,6 +118,11 @@ class main(object):
         #odo : File Renamer Logik Probl is download ready ? may pythen way or Api  
         #odo : Captcha Solver 1 mal durchlaufen/vergleichen mit s.to
         #odo : Error if Hoster link is down 
+
+    def changeUa(self):
+        ua = UserAgent()
+        return  ua.random
+
     def killChrome(self):
         try:
             command.run(['pkill', 'chrome'])

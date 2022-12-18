@@ -119,9 +119,9 @@ class Database(object):
             `Episode`
         INNER JOIN Staffel ON Episode.season_id = Staffel.id
         INNER JOIN Serien ON Staffel.serien_id = Serien.id
-        WHERE
-            Staffel.nr BETWEEN 10 AND 30 AND Serien.id = '6762' AND Episode.link IS NULL OR Episode.link = '' AND 
-            Episode.status = 'waiting' AND Episode.avl_hoster IS NOT NULL AND Episode.avl_hoster <> '' Order By id ASC """)
+        Where Episode.link = '' Or Episode.link is null AND Episode.avl_hoster != '' AND 
+            Episode.avl_hoster is NOT null AND Staffel.nr BETWEEN 10 AND 30 AND Serien.id = '6762' AND Episode.status = 'waiting' 
+        ORDER BY `Episode`.`link` DESC; """)
     # @staticmethod
     # def find_group(atributo, coleccao, group):
     #     try:
