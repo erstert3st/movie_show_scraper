@@ -1,4 +1,3 @@
-from bs4 import BeautifulSoup as soup
 import undetected_chromedriver.v2 as uc
 from selenium.webdriver.common.by import By
 import time
@@ -9,6 +8,8 @@ from pydub import AudioSegment
 import urllib.request
 from fake_useragent import UserAgent
 from  Exception import *
+import os
+
 '''
 ua = UserAgent()
 userAgent = ua.random
@@ -21,7 +22,10 @@ class SeleniumScraper(object):
 
     def __del__(self):
         self.closeBrowser()
-
+    def beep(self):
+        duration = 1 # seconds
+        freq = 100  # Hz
+        os.system('play -nq -t alsa synth {} sine {}'.format(duration, freq))
     def setChromeData(self):
         ua = UserAgent()
         self.url, self.Browser, self.title = "","",""
@@ -29,12 +33,11 @@ class SeleniumScraper(object):
         # self.options.add_argument("-user-agent='"+ua.random+"'")
         self.options.user_data_dir = "/home/user/.config/google-chrome"
         #vdisplay = Xvfb(width=1920, height=1080, visible=0)
-        #hoster_list = ["vivo.sx", "streamtape.", "vupload.", "voe.", "vidlox."]
 
     def closeBrowser(self):
         self.browser.quit()
 
-    def get_link(self, url, host):
+    def get_link(self, url, host, anwesend=False):
         self.url = ""
         self.setChromeData()
         self.browser = uc.Chrome(options=self.options)
@@ -43,6 +46,7 @@ class SeleniumScraper(object):
         print("browser open")
         time.sleep(4)
         # self.browser.maximize_window()
+        if self.url not in self.browser.current_url:raise videoBroken
         self.title = self.browser.title
         print("title:" + self.title)
         self.tryToPress("/html/body")
@@ -60,7 +64,7 @@ class SeleniumScraper(object):
                      return self.playAndSearchLink() # no captcha
                 continue
 
-        self.checkIframe()
+        self.checkIframe(anwesend)
         return self.playAndSearchLink() 
         
     def solveCaptcha(self, iframe):
@@ -73,8 +77,6 @@ class SeleniumScraper(object):
         # clicking to request the audio challange
         self.browser.find_element(By.XPATH, '//*[@id="recaptcha-audio-button"]').click()
         time.sleep(3)
-        #may solve without soup
-
         audio_url = self.browser.find_elements(By.CLASS_NAME, "rc-audiochallenge-tdownload-link")[0].get_attribute('href')
         time.sleep(1) 
         if len(audio_url) < 1: raise captchaLock
@@ -89,18 +91,24 @@ class SeleniumScraper(object):
         time.sleep(5)
 
 
-    def checkIframe(self,iframe="//iframe[@title='recaptcha challenge expires in two minutes']"):
+    def checkIframe(self,anwesend,iframe="//iframe[@title='recaptcha challenge expires in two minutes']"):
         iframe = self.browser.find_element(By.XPATH,iframe)
-        if iframe.is_displayed() == False:
-            return 
+        if iframe.is_displayed() is False:
+            return
         print("captcha found")
+        if anwesend is True:
+            self.beep()
+            time.sleep(15)
+            self.checkIframe(anwesend)
+            return  
         self.solveCaptcha(iframe)
         self.browser.switch_to.default_content()
 
     def playAndSearchLink(self, tag="Video"):
         print("playAndSearchLink")
         link = []
-        for x in range(0, 25):
+        for x in range(0, 15):
+            self.browser.switch_to.default_content()        
             if self.tryToPress(dryRun=True) is True:
             
                 time.sleep(3)
@@ -115,8 +123,8 @@ class SeleniumScraper(object):
                             self.browser.switch_to.default_content()
                             self.browser.get(link)  # add lang
                             time.sleep(7)
-                            print("found link (Y): " + link )
-                            return self.browser.title
+                            print("found link (Y): " + self.browser.current_url )
+                            return self.browser.current_url
                     except:
                         if self.browser.find_element(By.XPATH, "/html/body").text == "File was deleted": # Vidoza old fehlen Streamtabe 
                             raise videoBroken 
@@ -135,7 +143,7 @@ class SeleniumScraper(object):
         if len(self.browser.window_handles) == 1 or self.title[0:10] == self.browser.title[0:10]:
             print(self.title[0:10]+ " - "+ self.browser.title[0:10])
             print("no active ad tab found")
-            time.sleep(3)
+            time.sleep(1)
             return False
         size = len(self.browser.window_handles) - 1
         for counter, item in enumerate(reversed(self.browser.window_handles)):
@@ -179,6 +187,6 @@ class SeleniumScraper(object):
         with sr.AudioFile("song.wav") as source:
             audio = r.record(source)
             return r.recognize_google(audio)
-#if __name__ == "__main__":
-  #  hi = SeleniumScraper()
- #   hi.get_link("https://bs.to/serie/Die-Rosenheim-Cops/1/11-Suesse-Lust/de","Vidoza")
+
+
+

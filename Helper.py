@@ -84,7 +84,7 @@ class Api(object):
     def sendFiles(self, foldername, link, seasonId,seasonNr,serieName=""): # array for links
         response=self.session.post(self.host + "/api/login", data=self.login)
         #payload={'name':foldername ,'links':["https://uptobox.com/link1", "https://pixeldrain.com/u/link2"]} # array
-        if link[8:18] == "streamtape":
+        if "tapecontent.net" in link:
             foldername = seasonId +",_"+serieName+"_,Season"+seasonNr
         payload={'name':foldername ,'links':link.split(), } # array           
         payloadJSON = {k: json.dumps(v) for k, v in payload.items()}

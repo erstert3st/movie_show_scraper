@@ -1,4 +1,4 @@
-import cloudscraper
-scraper = cloudscraper.create_scraper()
-i = scraper.get("https://streamtape.com/get_video?id=xPgbO0OVVYIkkqx&expires=1671302502&ip=F0ySKRWSFS9XKxR&token=jxAO0udPsmKG&stream=1")
-print(i)
+import os
+duration = 0.1 # seconds
+freq = 100  # Hz
+os.system('play -nq -t alsa synth {} sine {}'.format(duration, freq))
