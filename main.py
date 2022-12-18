@@ -84,17 +84,17 @@ class main(object):
                     except:
                         continue
 
-                    
-        fileList = db.select(my_query = "select * from Files Where pid is NULL OR pid = '' AND Status != 'download'") # make readable
-        api = Api()
-       # for file in fileList:
-        #    episodId = str(file[2])
-         #                       #episodeId        #filename without .mp4    #link      
-          #  pid = api.sendFiles(  foldername=episodId +","+ file[7][:-4], link=file[9],\
-          #  seasonId=str(file[1]),seasonNr=file[4],serieName = file[3].replace(" ", "-"))
-            
-            
-            #db.update(table="Episode", status="download' , `pid` = '"+pid+" ", id = episodId)
+        if False:         
+            fileList = db.select(my_query = "select * from Files Where pid is NULL OR pid = '' AND Status != 'download'") # make readable
+            api = Api()
+            for file in fileList:
+                episodId = str(file[2])
+                                    #episodeId        #filename without .mp4    #link      
+                pid = api.sendFiles(  foldername=episodId +","+ file[7][:-4], link=file[9],\
+                seasonId=str(file[1]),seasonNr=file[4],serieName = file[3].replace(" ", "-"))
+                
+                
+                #db.update(table="Episode", status="download' , `pid` = '"+pid+" ", id = episodId)
         
         
         
