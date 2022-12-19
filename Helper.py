@@ -1,6 +1,7 @@
 import http.client as http_client
 import logging
 import json
+import cloudscraper
 import requests
 import shutil
 import ffmpeg
@@ -23,11 +24,11 @@ class FileManager(object):
             print("vidoza is shit")
             try:
             #req1 = requests(videoLink)
-                req = requests.head(videoLink)
+                scraper = cloudscraper.create_scraper()
+                req = scraper.head(videoLink)
                 size = req.headers['Content-Length']
             except:
-                #except requests.exceptions.Timeout as err :
-                raise videoBroken
+                raise botDetection
 
         if size == 0: raise videoBroken 
         sizeMB =  str(int(int(size)/1048576)) # second int remove decimal 
@@ -65,7 +66,7 @@ class Api(object):
     # Class variable
 
     def __init__(self):
-        self.host = "http://10.0.0.13:8111"
+        self.host = "http://10.0.0.14:8111"
         self.login = {'username': "admin", 'password': "password"}
         self.setLogger()
         self.session = self.startApi()
