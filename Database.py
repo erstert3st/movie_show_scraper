@@ -19,7 +19,7 @@ class Database(object):
     def connection(self):
         try:
             self.connect_db =  self.connect_db =  mysql.connector.connect(
-                                host="10.0.0.13",
+                                host="server.local",
                                 #host="localhost:3306",
                                 user="user",
                                 password="password",
@@ -120,11 +120,12 @@ class Database(object):
         INNER JOIN Staffel ON Episode.season_id = Staffel.id
         INNER JOIN Serien ON Staffel.serien_id = Serien.id
         Where Episode.link = '' Or Episode.link is null AND Episode.avl_hoster != '' AND 
-            Episode.avl_hoster is NOT null AND Staffel.nr BETWEEN 10 AND 30 AND Serien.id = '6762' AND Episode.status = 'waiting' 
-        ORDER BY `Episode`.`link` DESC; """)
+            Episode.avl_hoster is NOT null AND Serien.id = '6547' AND Episode.status = 'waiting' 
+        ORDER BY RAND() """)
     # @staticmethod
     # def find_group(atributo, coleccao, group):
-    #     try:
+    #     try:            Episode.avl_hoster is NOT null AND Staffel.nr BETWEEN 0 AND 30 AND Serien.id = '6762' AND Episode.status = 'waiting' 
+
     #         my_query = "select {} from {} group by {}".format(atributo, coleccao,s group)
     #         self.cursor.execute(my_query)
     #         return self.cursor.fetchall()
