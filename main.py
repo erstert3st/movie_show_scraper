@@ -84,7 +84,7 @@ class main(object):
                     except:
                         continue
 
-        if False:         
+        if True:         
             fileList = db.select(my_query = "select * from Files Where pid is NULL OR pid = '' AND Status != 'download'") # make readable
             api = Api()
             for file in fileList:
