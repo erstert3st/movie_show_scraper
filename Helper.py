@@ -35,8 +35,9 @@ class FileManager(object):
         fileData = str(sizeMB) +  width  #fix width  
         return fileData
 
-    def checkValidVideo(self, file, sourcePath,destPath):
+    def checkValidVideo(self,  sourcePath,destPath,deleteAfter=False):
         try:
+            if os.path.exists(sourcePath) is False: raise Exception
             (
                 ffmpeg
                 .input(sourcePath)
@@ -45,10 +46,13 @@ class FileManager(object):
             )
         except ffmpeg._run.Error:
             # db update to Search other Video because corrption may try one download more ?
-            return
+            return False
+        
         shutil.move(sourcePath, destPath)
-        os.path.exists(destPath)
-        os.remove(sourcePath)
+        if os.path.exists(destPath) is False: return False
+        if deleteAfter is True: os.remove(sourcePath)
+        return True
+
 
 
 #if __name__ == "__main__":#
