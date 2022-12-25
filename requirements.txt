@@ -10,3 +10,5 @@ pyvirtualdisplay
 chromedriver_autoinstaller
 SpeechRecognition
 fake_useragent
+speech_recognition
+pydub

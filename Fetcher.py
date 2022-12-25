@@ -87,7 +87,7 @@ class fetch(object):
         seasonsDiv = seasonsDiv.find_all("li")
         for season in seasonsDiv:
             link = "http://bs.to/" + season.a['href']
-            seasonList.extend([(serie[0], str(season.string),  str(serie[2]), link[:link.rfind('/')], "idc")])
+            seasonList.extend([(serie[0], str(season.string),  str(serie[2]), link[:link.rfind('/')], "new")])
         sqlInsert = "insert into Staffel(serien_id, nr, name, link, status) values (%s, %s, %s, %s, %s)"
         self.db.insertMany(sqlInsert, seasonList)
 

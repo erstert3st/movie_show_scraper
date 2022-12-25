@@ -46,8 +46,8 @@ class main(object):
                 try:
                     self.killChrome()
                     time.sleep(2)
-                # link = SeleniumScraper().get_link("https://bs.to/serie/How-I-Met-Your-Mother/8/11-Verhext-1/de/","Vidoza")
-                    link = SeleniumScraper(ua=botDedect).get_link(episode[3], hoster,anwesend=True)
+                    link = SeleniumScraper(ua=botDedect).get_link("https://bs.to/serie/How-I-Met-Your-Mother/8/11-Verhext-1/de/","Vidoza")
+                   # link = SeleniumScraper(ua=botDedect).get_link(episode[3], hoster,anwesend=False)
                     linkWithMeta = fileManager.checkVideoSize(link)
                     #check if first or second + should compare size 
                     print("found link: " + link)
@@ -65,7 +65,7 @@ class main(object):
                     time.sleep(random.randint(20, 37))
                     self.killChrome()
                     #time.sleep(random.randint(175, 235))
-                    time.sleep(random.randint(60, 120))
+                    time.sleep(random.randint(30, 75))
                 
 
                 except videoBroken as err:
@@ -96,13 +96,12 @@ class main(object):
                     continue
 
         if True:         
-            fileList = db.select(my_query = "select * from Files Where pid is NULL OR pid = '' AND Status != 'download'") # make readable
+            fileList = db.select(my_query = "select * from Files Where serien_id = ''pid is NULL OR pid = '' AND Status != 'download'") # make readable
             api = Api()
             for file in fileList:
                 episodId = str(file[2])
-                                    #episodeId        #filename without .mp4    #link      
-                pid = api.sendFiles(  foldername=episodId +","+ file[7][:-4], link=file[9],\
-                seasonId=str(file[1]),seasonNr=file[4],serieName = file[3].replace(" ", "-"))
+                                    #episodeId,serName, 
+                pid = api.sendFiles(  foldername=episodId +",-,"+file[3]+",-,"+file[4]+",-,"+file[7][:-4], link=file[9])
                 
                 
                 db.update(table="Episode", status="download' , `pid` = '"+pid+" ", id = episodId)

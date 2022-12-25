@@ -8,6 +8,7 @@ from pydub import AudioSegment
 import urllib.request
 from  Exception import *
 import os
+import requests
 
 '''
 ua = UserAgent()
@@ -33,17 +34,19 @@ class SeleniumScraper(object):
     def setChromeData(self):
         self.url, self.Browser, self.title = "","",""
         self.options = uc.ChromeOptions()
-        self.options.add_argument("-user-agent='"+self.ua+"'")
-        #self.options.user_data_dir = "/home/user/.config/google-chrome"
+       # self.options.add_argument("-user-agent='"+self.ua+"'")
+        self.options.user_data_dir = "/home/user/.config/google-chrome"
+        #self.options.user_data_dir = "Default"
         #vdisplay = Xvfb(width=1920, height=1080, visible=0)
         #Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.6 Safari/537.11
     def closeBrowser(self):
-        self.browser.quit()
-
+        if hasattr(self, 'browser') is True:
+            self.browser.quit()
+        print("close")
     def get_link(self, url, host, anwesend=False):
         self.url = ""
         self.setChromeData()
-        self.browser = uc.Chrome(options=self.options, user_data_dir="/home/user/.config/google-chrome")
+        self.browser = uc.Chrome(options=self.options) #, user_data_dir="/home/user/.config/google-chrome"
         self.url = url + "/" + host
         self.browser.get(self.url)  # add lang
         print("browser open")
@@ -111,6 +114,7 @@ class SeleniumScraper(object):
     def playAndSearchLink(self, tag="Video"):
         print("playAndSearchLink")
         link = []
+        error = False
         for x in range(0, 15):
             self.browser.switch_to.default_content()        
             if self.tryToPress(dryRun=True) is True:
@@ -122,11 +126,14 @@ class SeleniumScraper(object):
 
                         if len(link) > 0:
                             self.browser.switch_to.default_content()
+                            if requests.head(link).status_code == 302: raise videoBroken 
                             self.browser.get(link)  # add lang
                             time.sleep(5)
                             return self.browser.current_url
+                    except videoBroken:
+                        raise videoBroken 
                     except:
-                        if self.browser.find_element(By.XPATH, "/html/body").text == "File was deleted": # Vidoza old fehlen Streamtabe 
+                        if self.browser.find_element(By.XPATH, "/html/body").text == "File was deleted" or error: # Vidoza old fehlen Streamtabe 
                             raise videoBroken 
                         self.browser.switch_to.default_content()
         raise videoBroken
@@ -139,10 +146,12 @@ class SeleniumScraper(object):
         except:
             self.browser.switch_to.window(self.browser.window_handles[0])
             time.sleep(1)
+
         if len(self.browser.window_handles) == 1 or self.title[0:10] == self.browser.title[0:10]:
             print(self.title[0:10]+ " - "+ self.browser.title[0:10])
             print("no active ad tab found")
-            return False
+            return True
+
         size = len(self.browser.window_handles) - 1
         for counter, item in enumerate(reversed(self.browser.window_handles)):
             self.browser.switch_to.window(self.browser.window_handles[size - counter])
