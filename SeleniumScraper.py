@@ -16,7 +16,7 @@ print(userAgent)
 '''
 class SeleniumScraper(object):
 
-    def __init__(self,ua):
+    def __init__(self,ua=""):
         self.url = ""
         self.ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.6 Safari/537.11"
         if len(ua) > 1:
@@ -183,6 +183,18 @@ class SeleniumScraper(object):
         with sr.AudioFile("song.wav") as source:
             audio = r.record(source)
             return r.recognize_google(audio)
+
+    def searchStreamKiste(self,querry): # getLinks for no douple code 
+        self.setChromeData()
+        self.browser = uc.Chrome(options=self.options, user_data_dir="/home/user/.config/google-chrome")
+        self.url = url = "https://streamkiste.tv/search/" + querry
+        
+        
+if __name__ == "__main__":
+    #db =  Database()
+    fetcher = SeleniumScraper("db")
+    url = "https://streamkiste.tv/search/" + "berg"
+    fetcher.find_StreamKiste(url)
 
 
 

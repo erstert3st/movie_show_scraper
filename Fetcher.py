@@ -1,14 +1,15 @@
 import cloudscraper
 from bs4 import BeautifulSoup
-from Database import *
+from Database import Database
 
 
 class fetch(object):
     # Class variable
 
-    def __init__(self, db):
-        self.db = db
-        self.request = cloudscraper.create_scraper()
+    def __init__(self, db=""):
+        if len(db) != 0: 
+            self.db = db
+            self.request = cloudscraper.create_scraper()
 
     def getSoup(self, URL):
         page = self.request.get(URL)
@@ -90,6 +91,20 @@ class fetch(object):
         sqlInsert = "insert into Staffel(serien_id, nr, name, link, status) values (%s, %s, %s, %s, %s)"
         self.db.insertMany(sqlInsert, seasonList)
 
-# if __name__ == "__main__":
-  #  hi = Fetcher()
-   # hi.Crawl_Page()
+    def find_StreamKiste(self, querry):
+        soup = self.getSoup(querry)
+        last_Element_Found= True
+        counter =1
+        while counter > 0:
+            counter +=1
+            listElement = soup.select("#content > div > div > div.fix-film_item.fix_category.clearfix.list_items > div:nth-child("+str(counter)+") > div > div.movie-poster > aa")
+            if listElement == None:counter = 0
+            #listElement.
+            
+        
+        
+if __name__ == "__main__":
+    #db =  Database()
+    fetcher = fetch("db")
+    url = "https://streamkiste.tv/search/" + "berg"
+    fetcher.find_StreamKiste(url)
