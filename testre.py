@@ -15,3 +15,14 @@ pattern.groupindex
 
 print(pattern.groupindex)
 
+#SELECT EpisodeRequests.id as EpiReqId,
+# EpisodeRequests.SeasonId as SeasonId,
+# SeasonRequests.ChildRequestId as RequestId,
+# SeasonRequests.SeasonNumber as SeasonNr,
+# EpisodeRequests.EpisodeNumber,
+# EpisodeRequests.Title
+# FROM EpisodeRequests
+# INNER JOIN SeasonRequests
+# ON EpisodeRequests.SeasonId = SeasonRequests.Id
+# INNER JOIN ChildRequests
+#ON SeasonRequests.ChildRequestId = ChildRequests.Id;

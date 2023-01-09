@@ -1,6 +1,11 @@
     #ToDo:  SELECTION Find Website/app for search and mark Seasan,  with api + FireTv + website kompatible
 
-    #ToDo:
+    #ToDo: now design main -> auto quali finder
+    #ToDo: test all sites ->
+    #ToDo: Host chooser / 
+    #ToDo Broken Video -> Error link -> other Hoster #infocolum -> ERROR Handler
+    #ToDo Clean up
+    #Todo DDL Downloader
 
 #Pyt        #       Bs Serie crawler
 #QSR        #?api   data To DB MOVIES
@@ -10,18 +15,14 @@
 
 #           #Todo   secure Pi
 #Pyt        #Todo   episode crawler 90%
-#SQL        #Todo   DB AUTO generate links + folder structur 
+#SQL        #Todo   folder structur 
 #Pyt        # ?     Docker/Multithreadet
-#Docker     #ToDo   selenium server
 #git        #Todo   ublock + buster 
-#pyt        #Todo   get api token
-#SQL        #Todo   cache link 
 #Pyt        #Todo   Chose Hoster 
 #SQL        #Todo   analyse link vfor optional quality
-#PYT        #Todo   click and find mp4 Link
 #Docker     #Todo   Pyload/jDownloader API
-#Docker     #Todo   Download Timer/ Manuell starten
-#Docker     #Todo   Jellyfin Api
+#Docker     Todo   Download Timer/ Manuell starten
+#Docker     Todo   Jellyfin Api
 #Qst        #Todo   FolderManager ? oO 
 #Docker     #Todo   Docker Composer  # mount downloads/ Media Folders for copy data + dockerfile with chrome
 #Docker     #Todo  Chrome Docker + dns + buster + ublock :D much fun 
