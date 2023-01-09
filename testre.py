@@ -5,8 +5,7 @@ import re
 txt = "adawedqwojS01E93.mp4"
 
 
-pattern = re.compile(r'(?P<VUL>(\d{1,2}|One)\s+ 
-(vulnerabilities|vulnerability)\s+discovered)')
+pattern = re.compile(r'(?P<VUL>(\d{1,2}|One)\s+ (vulnerabilities|vulnerability)\s+discovered)')
 
 match = re.findall(pattern, data)
 
