@@ -111,11 +111,14 @@ select `Ombi`.`EpisodeRequests`.`Id` AS `EpiReqId`,0 AS `isMovie`,`Ombi`.`Episod
     `Ombi`.`ChildRequests`.`MarkedAsAvailable` AS `MarkedAsAvailable`,
     `Ombi`.`ChildRequests`.`Denied` AS `Denied`,
     `Ombi`.`ChildRequests`.`DeniedReason` AS `DeniedReason`,
-    `Ombi`.`ChildRequests`.`LinkQuali` AS `4K`,
+    `Ombi`.`EpisodeRequests`.`Link_Quali` AS `4K`,
+    `Ombi`.`EpisodeRequests`.`Dow_Status` AS `Dow_Status`,
+    `Ombi`.`EpisodeRequests`.`Check_Quali` AS `Check_Quali`,
+    `Ombi`.`EpisodeRequests`.`Bs_Link` AS `Bs_Link`,
     `Ombi`.`EpisodeRequests`.`Link` AS `Link`,
-    `Ombi`.`EpisodeRequests`.`LinkQuali` AS `LinkQuali`,
-    `Ombi`.`EpisodeRequests`.`AltLink` AS `AltLink`,
-    `Ombi`.`EpisodeRequests`.`AltLinkQuali` AS `AltLinkQuali`,
+    `Ombi`.`EpisodeRequests`.`Link_Quali` AS `Link_Quali`,
+    `Ombi`.`EpisodeRequests`.`Alt_Link` AS `Alt_Link`,
+    `Ombi`.`EpisodeRequests`.`Alt_Link_Quali` AS `Alt_Link_Quali`,
     `Ombi`.`EpisodeRequests`.`Error` AS `Error`,
     `Ombi`.`EpisodeRequests`.`Info` AS `Info`
 FROM
@@ -157,10 +160,13 @@ SELECT
     MovieRequests.Denied,
     MovieRequests.DeniedReason,
     MovieRequests.Has4KRequest,
+    MovieRequests.Dow_Status,
+    MovieRequests.Check_Quali,
+    MovieRequests.Bs_Link,
     MovieRequests.Link,
-    MovieRequests.LinkQuali,
-    MovieRequests.AltLink,
-    MovieRequests.AltLinkQuali,
+    MovieRequests.Link_Quali,
+    MovieRequests.Alt_Link,
+    MovieRequests.Alt_Link_Quali,
     MovieRequests.Error,
     MovieRequests.Info
 FROM
@@ -169,7 +175,7 @@ FROM
 
     ALTER TABLE  `Ombi`.`MovieRequests`
     ALTER TABLE  `Ombi`.`EpisodeRequests`
-    ADD COLUMN `Status` VARCHAR(255),
+    ADD COLUMN Dow_Status VARCHAR(255),
    ADD COLUMN Check_Quali VARCHAR(255),
    ADD COLUMN Bs_Link VARCHAR(255),
    ADD COLUMN Link VARCHAR(255),

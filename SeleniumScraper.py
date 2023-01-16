@@ -4,8 +4,7 @@ import time
 import random
 #from xvfbwrapper import Xvfb
 import speech_recognition  as sr
-from pydub import AudioSegment
-import urllib.request
+from captcha import captcha
 from  Exception import *
 import os
 import requests
@@ -25,11 +24,65 @@ class SeleniumScraper(object):
 
     def __del__(self):
         self.closeBrowser()
-    
-    def beep(self):
-        duration = 1 # seconds
-        freq = 100  # Hz
-        os.system('play -nq -t alsa synth {} sine {}'.format(duration, freq))
+
+    def findStreams(self, objekt):
+        isMovie= False
+        if(objekt[1] == 1): # if objekt is movie or not 
+            isMovie= True
+            self.checkCine()
+        else:
+            self.check_Bs()
+            self.check_STo()
+        self.check_Streamkiste(isMovie)
+
+    def check_Streamkiste(self,querry, imdb,isMovie="/movie/"): # getLinks for no douple code 
+        self.setChromeData()
+        self.browser = uc.Chrome(options=self.options)#, user_data_dir="/home/user/.config/google-chrome")
+        self.url =  querry
+        time.sleep(5)
+        self.browser.get(self.url)  # add lang
+        time.sleep(5)
+        last_Element_Found= True
+        links = []
+        counter =1
+        if len(imdb) < 1:  raise invalidImdb
+        while counter > 0:
+            counter +=1
+            try:
+                tableElement = self.browser.find_element(By.XPATH, "//*[@id='content']/div/div/div[3]/div["+str(counter)+"]")#.get_attribute('src')  
+                link = tableElement.find_element(By.TAG_NAME,"a").get_attribute('href')
+                if isMovie in link: 
+                    links.append(link)
+            except:
+                break
+        if(len(links) < 1): raise streamKisteSearchError
+        for link in links:
+            self.browser.get(link)
+            time.sleep(5)
+            print("serac")
+            if imdb not in self.browser.find_element(By.CSS_SELECTOR, "#content > div > div.single-content.movie > div.rating > div.vote > div > div.site-vote > span > a").get_attribute('href'):
+                print("not found")
+                break
+            else: 
+                self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
+                time.sleep(1)
+                dropdown = Select(self.browser.find_element(By.ID, "rel"))
+                time.sleep(0.8)
+                dropdown.select_by_index(0)
+                time.sleep(1)
+                hosterList = self.browser.find_elements(By.ID,"stream-links")
+                #myhosterList = self.db.getHoster()
+                #sortetList
+                #unsortetList
+                for hoster in hosterList:
+                    if self.tryToPress(dryRun=True) is True: #check iframe + get link + hostchecker 
+                        print("debug")
+                #if self.scrollAndClick() is True:
+                  # if  hoster.find_element(By.CLASS_NAME,"hoster").text in myhosterList:
+
+           # if  imdb in self.browser.find_element(By.CSS_SELECTOR, "#content > div > div.single-content.movie > div.rating > div.vote > div > div.site-vote > span > a").get_attribute('href'):
+           # listElement = soup.select("#content > div > div > div.fix-film_item.fix_category.clearfix.list_items > div:nth-child("+str(counter)+") > div > div.movie-poster > aa")
+            #if link == None:counter = 0
     
     def setChromeData(self):
         self.url, self.Browser, self.title = "","",""
@@ -43,7 +96,8 @@ class SeleniumScraper(object):
         if hasattr(self, 'browser') is True:
             self.browser.quit()
         print("close")
-    def get_link(self, url, host, anwesend=False):
+    
+    def check_Bs(self, url, host, anwesend=False):
         self.url = ""
         self.setChromeData()
         self.browser = uc.Chrome(options=self.options) #, user_data_dir="/home/user/.config/google-chrome"
@@ -74,7 +128,7 @@ class SeleniumScraper(object):
         self.checkIframe(anwesend)
         return self.playAndSearchLink() 
         
-    def solveCaptcha(self, iframe):
+    def FindAndSolveCaptcha(self, iframe):
 
         time.sleep(random.randint(5, 15))
         # return "restart"
@@ -88,7 +142,7 @@ class SeleniumScraper(object):
         time.sleep(1) 
         if len(audio_url) < 1: raise captchaLock
         # verifying the answer
-        solution = self.captchaSolver(audio_url)
+        solution = captcha().captchaSolver(audio_url)
         time.sleep(random.randint(5, 9))
         # answer_input
         self.browser.find_element(By.ID, 'audio-response').send_keys(solution)
@@ -108,7 +162,7 @@ class SeleniumScraper(object):
             time.sleep(15)
             self.checkIframe(anwesend)
             return  
-        self.solveCaptcha(iframe)
+        self.FindAndSolveCaptcha(iframe)
         self.browser.switch_to.default_content()
 
     def playAndSearchLink(self, tag="Video"):
@@ -183,71 +237,17 @@ class SeleniumScraper(object):
                 self.scrollAndClick(xpath)
         return False
 
-    def captchaSolver(self, url):
-        urllib.request.urlretrieve(url, "audio.mp3")  # Ask why
-        sound = AudioSegment.from_mp3("audio.mp3")
-        sound.export("song.wav", format="wav")
-
-        r = sr.Recognizer()
-        with sr.AudioFile("song.wav") as source:
-            audio = r.record(source)
-            return r.recognize_google(audio)
-
-    def searchStreamKiste(self,querry, imdb,isMovie="/movie/"): # getLinks for no douple code 
-        self.setChromeData()
-        self.browser = uc.Chrome(options=self.options)#, user_data_dir="/home/user/.config/google-chrome")
-        self.url =  querry
-        time.sleep(5)
-        self.browser.get(self.url)  # add lang
-        time.sleep(5)
-        last_Element_Found= True
-        links = []
-        counter =1
-        if len(imdb) < 1:  raise invalidImdb
-        while counter > 0:
-            counter +=1
-            try:
-                tableElement = self.browser.find_element(By.XPATH, "//*[@id='content']/div/div/div[3]/div["+str(counter)+"]")#.get_attribute('src')  
-                link = tableElement.find_element(By.TAG_NAME,"a").get_attribute('href')
-                if isMovie in link: 
-                    links.append(link)
-            except:
-                break
-        if(len(links) < 1): raise streamKisteSearchError
-        for link in links:
-            self.browser.get(link)
-            time.sleep(5)
-            print("serac")
-            if imdb not in self.browser.find_element(By.CSS_SELECTOR, "#content > div > div.single-content.movie > div.rating > div.vote > div > div.site-vote > span > a").get_attribute('href'):
-                print("not found")
-                break
-            else: 
-                self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
-                time.sleep(1)
-                dropdown = Select(self.browser.find_element(By.ID, "rel"))
-                time.sleep(0.8)
-                dropdown.select_by_index(0)
-                time.sleep(1)
-                hosterList = self.browser.find_elements(By.ID,"stream-links")
-                #myhosterList = self.db.getHoster()
-                #sortetList
-                #unsortetList
-                for hoster in hosterList:
-                    if self.tryToPress(xpath= dryRun=True) is True: #check iframe + get link + hostchecker 
-            
-                if  self.scrollAndClick() is True:
-                  # if  hoster.find_element(By.CLASS_NAME,"hoster").text in myhosterList:
-
-           # if  imdb in self.browser.find_element(By.CSS_SELECTOR, "#content > div > div.single-content.movie > div.rating > div.vote > div > div.site-vote > span > a").get_attribute('href'):
-           # listElement = soup.select("#content > div > div > div.fix-film_item.fix_category.clearfix.list_items > div:nth-child("+str(counter)+") > div > div.movie-poster > aa")
-            #if link == None:counter = 0
+    def beep(self):
+        duration = 1 # seconds
+        freq = 100  # Hz
+        os.system('play -nq -t alsa synth {} sine {}'.format(duration, freq))
         
         
 if __name__ == "__main__":
     #db =  Database()
     fetcher = SeleniumScraper("db")
     url = "https://streamkiste.tv/search/" + "berg"
-    fetcher.searchStreamKiste(url, imdb="tt3010660")
+    fetcher.check_Streamkiste(url, imdb="tt3010660")
 
 
 
