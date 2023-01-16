@@ -89,3 +89,97 @@ INNER JOIN Staffel ON Episode.season_id = Staffel.id
 INNER JOIN Serien ON Staffel.serien_id = Serien.id
 WHERE Episode.link IS NOT NULL AND Episode.link <> '' AND
  Episode.status != "new" AND Episode.status != "idc" AND Episode.status != "waiting";
+#V2
+select `Ombi`.`EpisodeRequests`.`Id` AS `EpiReqId`,0 AS `isMovie`,`Ombi`.`EpisodeRequests`.`SeasonId` AS `SeasonId`,`Ombi`.`SeasonRequests`.`ChildRequestId` AS `RequestId`,`Ombi`.`TvRequests`.`Title` AS `Serie`,`Ombi`.`SeasonRequests`.`SeasonNumber` AS `SeasonNr`,`Ombi`.`EpisodeRequests`.`EpisodeNumber` AS `EpisodeNumber`,`Ombi`.`TvRequests`.`TvDbId` AS `TvDbId`,`Ombi`.`TvRequests`.`ImdbId` AS `ImdbId`,`Ombi`.`TvRequests`.`Status` AS `Status`,`Ombi`.`EpisodeRequests`.`Title` AS `EpiTitle`,`Ombi`.`ChildRequests`.`Title` AS `Title`,`Ombi`.`ChildRequests`.`Available` AS `Available`,`Ombi`.`ChildRequests`.`MarkedAsAvailable` AS `MarkedAsAvailable`,`Ombi`.`ChildRequests`.`Denied` AS `Denied`,`Ombi`.`ChildRequests`.`DeniedReason` AS `DeniedReason` from (((`Ombi`.`EpisodeRequests` join `Ombi`.`SeasonRequests` on(`Ombi`.`EpisodeRequests`.`SeasonId` = `Ombi`.`SeasonRequests`.`Id`)) join `Ombi`.`ChildRequests` on(`Ombi`.`SeasonRequests`.`ChildRequestId` = `Ombi`.`ChildRequests`.`Id`)) join `Ombi`.`TvRequests` on(`Ombi`.`ChildRequests`.`ParentRequestId` = `Ombi`.`TvRequests`.`Id`)) union select `Ombi`.`MovieRequests`.`Id` AS `ID`,1 AS `TRUE`,NULL AS `NULL`,NULL AS `NULL`,`Ombi`.`MovieRequests`.`Title` AS `Title`,NULL AS `NULL`,NULL AS `NULL`,`Ombi`.`MovieRequests`.`TheMovieDbId` AS `TheMovieDbId`,`Ombi`.`MovieRequests`.`ImdbId` AS `ImdbId`,`Ombi`.`MovieRequests`.`Status` AS `Status`,NULL AS `NULL`,`Ombi`.`MovieRequests`.`Title` AS `Title`,`Ombi`.`MovieRequests`.`Available` AS `Available`,`Ombi`.`MovieRequests`.`MarkedAsAvailable` AS `MarkedAsAvailable`,`Ombi`.`MovieRequests`.`Denied` AS `Denied`,`Ombi`.`MovieRequests`.`DeniedReason` AS `DeniedReason` from `Ombi`.`MovieRequests`
+
+
+#V3
+ CREATE OR REPLACE VIEW WorkToDo AS SELECT
+    `Ombi`.`EpisodeRequests`.`Id` AS `EpiReqId`,
+    FALSE AS `isMovie`,
+    `Ombi`.`EpisodeRequests`.`SeasonId` AS `SeasonId`,
+    `Ombi`.`SeasonRequests`.`ChildRequestId` AS `RequestId`,
+    `Ombi`.`TvRequests`.`Title` AS `Serie`,
+    `Ombi`.`SeasonRequests`.`SeasonNumber` AS `SeasonNr`,
+    `Ombi`.`EpisodeRequests`.`EpisodeNumber` AS `EpisodeNumber`,
+    `Ombi`.`TvRequests`.`TvDbId` AS `TvDbId`,
+    `Ombi`.`TvRequests`.`ImdbId` AS `ImdbId`,
+    `Ombi`.`TvRequests`.`Status` AS `Status`,
+    `Ombi`.`EpisodeRequests`.`Title` AS `EpiTitle`,
+    `Ombi`.`ChildRequests`.`Title` AS `Title`,
+    `Ombi`.`ChildRequests`.`Available` AS `Available`,
+    `Ombi`.`ChildRequests`.`MarkedAsAvailable` AS `MarkedAsAvailable`,
+    `Ombi`.`ChildRequests`.`Denied` AS `Denied`,
+    `Ombi`.`ChildRequests`.`DeniedReason` AS `DeniedReason`,
+    `Ombi`.`ChildRequests`.`LinkQuali` AS `4K`,
+    `Ombi`.`EpisodeRequests`.`Link` AS `Link`,
+    `Ombi`.`EpisodeRequests`.`LinkQuali` AS `LinkQuali`,
+    `Ombi`.`EpisodeRequests`.`AltLink` AS `AltLink`,
+    `Ombi`.`EpisodeRequests`.`AltLinkQuali` AS `AltLinkQuali`,
+    `Ombi`.`EpisodeRequests`.`Error` AS `Error`,
+    `Ombi`.`EpisodeRequests`.`Info` AS `Info`
+FROM
+    (
+        (
+            (
+                `Ombi`.`EpisodeRequests`
+            JOIN `Ombi`.`SeasonRequests` ON
+                (
+                    `Ombi`.`EpisodeRequests`.`SeasonId` = `Ombi`.`SeasonRequests`.`Id`
+                )
+            )
+        JOIN `Ombi`.`ChildRequests` ON
+            (
+                `Ombi`.`SeasonRequests`.`ChildRequestId` = `Ombi`.`ChildRequests`.`Id`
+            )
+        )
+    JOIN `Ombi`.`TvRequests` ON
+        (
+            `Ombi`.`ChildRequests`.`ParentRequestId` = `Ombi`.`TvRequests`.`Id`
+        )
+    )
+UNION
+SELECT
+    MovieRequests.ID,
+    TRUE,
+    NULL,
+    NULL,
+    MovieRequests.Title,
+    NULL,
+    NULL,
+    MovieRequests.TheMovieDbId,
+    MovieRequests.ImdbId,
+    MovieRequests.Status,
+    NULL,
+    MovieRequests.Title,
+    MovieRequests.Available,
+    MovieRequests.MarkedAsAvailable,
+    MovieRequests.Denied,
+    MovieRequests.DeniedReason,
+    MovieRequests.Has4KRequest,
+    MovieRequests.Link,
+    MovieRequests.LinkQuali,
+    MovieRequests.AltLink,
+    MovieRequests.AltLinkQuali,
+    MovieRequests.Error,
+    MovieRequests.Info
+FROM
+    MovieRequests;
+
+
+    ALTER TABLE  `Ombi`.`MovieRequests`
+    ALTER TABLE  `Ombi`.`EpisodeRequests`
+    ADD COLUMN `Status` VARCHAR(255),
+   ADD COLUMN Check_Quali VARCHAR(255),
+   ADD COLUMN Bs_Link VARCHAR(255),
+   ADD COLUMN Link VARCHAR(255),
+   ADD COLUMN Link_Quali VARCHAR(255),
+   ADD COLUMN Alt_Link VARCHAR(255),
+   ADD COLUMN Alt_Link_Quali VARCHAR(255),
+   ADD COLUMN Error VARCHAR(30),
+   ADD COLUMN Info VARCHAR(255);
+
+    ALTER TABLE  `Ombi`.`TvRequests`
+   ADD COLUMN Watcher VARCHAR(255);
+
+   #add logger for tv request with logger 
