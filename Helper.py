@@ -66,7 +66,7 @@ class Api(object):
     # Class variable
 
     def __init__(self):
-        self.host = "http://10.0.0.14:8111"
+        self.host = "http://10.0.0.13:8111"
         self.login = {'username': "admin", 'password': "password"}
         self.setLogger()
         self.session = self.startApi()

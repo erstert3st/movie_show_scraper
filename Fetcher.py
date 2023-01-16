@@ -86,10 +86,16 @@ class fetch(object):
         seasonsDiv = seasonsDiv.find_all("li")
         for season in seasonsDiv:
             link = "http://bs.to/" + season.a['href']
-            seasonList.extend([(serie[0], str(season.string),  str(serie[2]), link[:link.rfind('/')], "new")])
+            seasonNr = str(season.string)
+            if seasonNr == "Specials": seasonNr = "00"
+            if(len(seasonNr) < 2): seasonNr = "0"+ seasonNr
+            seasonList.extend([(serie[0], seasonNr,  str(serie[2]), link[:link.rfind('/')], "new")])
         sqlInsert = "insert into Staffel(serien_id, nr, name, link, status) values (%s, %s, %s, %s, %s)"
         self.db.insertMany(sqlInsert, seasonList)
 
 # if __name__ == "__main__":
   #  hi = Fetcher()
    # hi.Crawl_Page()
+ #seasonNr = str(season.string)
+  #          if seasonNr == "Specials": season = "00"
+   #         seasonList.extend([(serie[0], seasonNr,  str(serie[2]), link[:link.rfind('/')], "new")])

@@ -46,8 +46,8 @@ class main(object):
                 try:
                     self.killChrome()
                     time.sleep(2)
-                    link = SeleniumScraper(ua=botDedect).get_link("https://bs.to/serie/How-I-Met-Your-Mother/8/11-Verhext-1/de/","Vidoza")
-                   # link = SeleniumScraper(ua=botDedect).get_link(episode[3], hoster,anwesend=False)
+                    #link = SeleniumScraper(ua=botDedect).get_link("https://bs.to/serie/How-I-Met-Your-Mother/8/11-Verhext-1/de/","Vidoza")
+                    link = SeleniumScraper(ua=botDedect).get_link(episode[3], hoster,anwesend=True)
                     linkWithMeta = fileManager.checkVideoSize(link)
                     #check if first or second + should compare size 
                     print("found link: " + link)
@@ -96,14 +96,12 @@ class main(object):
                     continue
 
         if True:         
-            fileList = db.select(my_query = "select * from Files Where serien_id = ''pid is NULL OR pid = '' AND Status != 'download'") # make readable
+            fileList = db.select(my_query = "select * from Files Where serien_id = '6547' AND pid is NULL OR pid = '' AND Status != 'download'") # make readable
             api = Api()
             for file in fileList:
                 episodId = str(file[2])
                                     #episodeId,serName, 
-                pid = api.sendFiles(  foldername=episodId +",-,"+file[3]+",-,"+file[4]+",-,"+file[7][:-4], link=file[9])
-                
-                
+                pid = api.sendFiles(  foldername=episodId +",-,"+file[3]+",-,"+file[4]+",-,"+file[7][:-4], link=file[9])                
                 db.update(table="Episode", status="download' , `pid` = '"+pid+" ", id = episodId)
         
         
