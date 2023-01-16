@@ -251,3 +251,26 @@ if __name__ == "__main__":
 
 
 
+
+ def searchCine(self,querry, imdb): # getLinks for no douple code 
+        self.setChromeData()
+        self.browser = uc.Chrome(options=self.options)#, user_data_dir="/home/user/.config/google-chrome")
+        self.url = "https://cine.to" 
+        time.sleep(5)
+        self.browser.get(self.url)  # add lang
+        time.sleep(5)
+        input = self.browser.find_element(By.CSS_SELECTOR, 'body > div.container-fluid > div.container-fluid.entries > nav.navbar.navbar-static-top.navbar-search > div > input[type=text]')
+        input.send_keys(querry)
+        time.sleep(5)
+        print(imdb)
+        notFound = True
+        resultList = self.browser.find_elements(By.CSS_SELECTOR,"body > div.container-fluid > div.container-fluid.entries > section > a ")
+        for result in  resultList :
+           if imdb in result.get_attribute('href'):
+                result.click()
+                self.adCheck()
+                notFound = False
+                break
+        if notFound: raise streamKisteSearchError
+        hosterList = self.browser.find_element(By.CSS_SELECTOR,"#entry > div > div > div.modal-body")
+        hosterList = hosterList.findElements(By.tagName("li"))
