@@ -169,8 +169,7 @@ FROM
 
     ALTER TABLE  `Ombi`.`MovieRequests`
     ALTER TABLE  `Ombi`.`EpisodeRequests`
-    ADD COLUMN 'Status' VARCHAR(255),
-   ADD COLUMN Link VARCHAR(255),
+    ADD COLUMN `Status` VARCHAR(255),
    ADD COLUMN Check_Quali VARCHAR(255),
    ADD COLUMN Bs_Link VARCHAR(255),
    ADD COLUMN Link VARCHAR(255),
