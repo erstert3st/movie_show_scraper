@@ -26,26 +26,24 @@ class SeleniumScraper(object):
         self.closeBrowser()
 
     def findStreams(self, objekt):
-        isMovie= False
+        isMovie= ""
         if(objekt[1] == 1): # if objekt is movie or not 
-            isMovie= True
-            self.checkCine()
+            isMovie= "movie"
+            self.checkCine(movieName=objekt[4],imdb=objekt[8])
         else:
             self.check_Bs()
             self.check_STo()
-        self.check_Streamkiste(isMovie)
-
-    def check_Streamkiste(self,querry, imdb,isMovie="/movie/"): # getLinks for no douple code 
+        self.check_Streamkiste(movieName=objekt[4],imdb=objekt[8], if([objekt]))
+    def open_Chrome(self,link):
         self.setChromeData()
         self.browser = uc.Chrome(options=self.options)#, user_data_dir="/home/user/.config/google-chrome")
-        self.url =  querry
-        time.sleep(5)
+        self.url = link
+        time.sleep(3)
         self.browser.get(self.url)  # add lang
-        time.sleep(5)
-        last_Element_Found= True
+        time.sleep(5) # make waiter 
+    
+    def getAllKisteLinks(self,isMovie):
         links = []
-        counter =1
-        if len(imdb) < 1:  raise invalidImdb
         while counter > 0:
             counter +=1
             try:
@@ -56,6 +54,32 @@ class SeleniumScraper(object):
             except:
                 break
         if(len(links) < 1): raise streamKisteSearchError
+        
+        return links
+
+    def try_Kiste_Links(self,links,imdb):
+
+        for link in links:
+            self.browser.get(link)
+            time.sleep(5)
+            print("serac")
+            if imdb in self.browser.find_element(By.CSS_SELECTOR, "#content > div > div.single-content.movie > div.rating > div.vote > div > div.site-vote > span > a").get_attribute('href'):
+                return True
+                print("found")
+        return False
+
+    def check_Streamkiste(self,querry, imdb,isMovie="/movie/"): # getLinks for no douple code 
+        if(len(imdb) < 1):
+            imdb = querry
+        url =  "https://streamkiste.tv/search/" + imdb
+        self.open_Chrome(url)
+        last_Element_Found= True
+        links = []
+        counter =1
+
+    
+        links = self.getAllKisteLinks(isMovie)
+        self.try_Kiste_Links(links)
         for link in links:
             self.browser.get(link)
             time.sleep(5)
@@ -63,7 +87,10 @@ class SeleniumScraper(object):
             if imdb not in self.browser.find_element(By.CSS_SELECTOR, "#content > div > div.single-content.movie > div.rating > div.vote > div > div.site-vote > span > a").get_attribute('href'):
                 print("not found")
                 break
-            else: 
+         
+
+
+
                 self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
                 time.sleep(1)
                 dropdown = Select(self.browser.find_element(By.ID, "rel"))
@@ -98,11 +125,9 @@ class SeleniumScraper(object):
         print("close")
     
     def check_Bs(self, url, host, anwesend=False):
-        self.url = ""
-        self.setChromeData()
-        self.browser = uc.Chrome(options=self.options) #, user_data_dir="/home/user/.config/google-chrome"
-        self.url = url + "/" + host
-        self.browser.get(self.url)  # add lang
+        self.open_Chrome("https://bs.to") 
+        #Todo search model 
+        
         print("browser open")
         time.sleep(2)
         # self.browser.maximize_window()
@@ -111,7 +136,6 @@ class SeleniumScraper(object):
         print("title:" + self.title)
         self.tryToPress("/html/body")
         print("first scroll/click done") #
-        #self.tryToPress() # check bug
 
         #self.browser.save_screenshot("pics/" + str(y) + ".png")
         for x in range(0, 5):
@@ -200,12 +224,12 @@ class SeleniumScraper(object):
         except:
             self.browser.switch_to.window(self.browser.window_handles[0])
             time.sleep(1)
-
+        #may not neded
         if len(self.browser.window_handles) == 1 or self.title[0:10] == self.browser.title[0:10]:
             print(self.title[0:10]+ " - "+ self.browser.title[0:10])
             print("no active ad tab found")
             return True
-
+        #neded
         size = len(self.browser.window_handles) - 1
         for counter, item in enumerate(reversed(self.browser.window_handles)):
             self.browser.switch_to.window(self.browser.window_handles[size - counter])
@@ -242,28 +266,15 @@ class SeleniumScraper(object):
         freq = 100  # Hz
         os.system('play -nq -t alsa synth {} sine {}'.format(duration, freq))
         
-        
-if __name__ == "__main__":
-    #db =  Database()
-    fetcher = SeleniumScraper("db")
-    url = "https://streamkiste.tv/search/" + "berg"
-    fetcher.check_Streamkiste(url, imdb="tt3010660")
-
-
-
-
- def searchCine(self,querry, imdb): # getLinks for no douple code 
-        self.setChromeData()
-        self.browser = uc.Chrome(options=self.options)#, user_data_dir="/home/user/.config/google-chrome")
-        self.url = "https://cine.to" 
-        time.sleep(5)
-        self.browser.get(self.url)  # add lang
-        time.sleep(5)
+    def checkCine(self,movieName, imdb): # getLinks for no douple code 
+        self.open_Chrome("https://cine.to" )
         input = self.browser.find_element(By.CSS_SELECTOR, 'body > div.container-fluid > div.container-fluid.entries > nav.navbar.navbar-static-top.navbar-search > div > input[type=text]')
-        input.send_keys(querry)
+        input.send_keys(movieName)
         time.sleep(5)
+        
         print(imdb)
-        notFound = True
+        
+        notFound = True #make go on next page 
         resultList = self.browser.find_elements(By.CSS_SELECTOR,"body > div.container-fluid > div.container-fluid.entries > section > a ")
         for result in  resultList :
            if imdb in result.get_attribute('href'):
@@ -274,3 +285,14 @@ if __name__ == "__main__":
         if notFound: raise streamKisteSearchError
         hosterList = self.browser.find_element(By.CSS_SELECTOR,"#entry > div > div > div.modal-body")
         hosterList = hosterList.findElements(By.tagName("li"))
+        
+if __name__ == "__main__":
+    #db =  Database()
+    fetcher = SeleniumScraper("db")
+    
+    fetcher.check_Streamkiste(str("Die Chroniken von Narnia: Der König von Narnia").replace(" ", "+"), imdb="tt0363771")
+
+
+#streamkiste is in git 
+
+ 

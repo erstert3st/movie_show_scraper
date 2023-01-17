@@ -22,7 +22,7 @@ class main(object):
 
         for videos in waiting_Videos:
             try:
-                link = SeleniumScraper(ua=botDedect).findStreams(episode[3], anwesend=True)
+                link = SeleniumScraper(ua=botDedect).findStreams(videos, anwesend=True)
             
             
             
