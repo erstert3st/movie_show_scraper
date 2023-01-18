@@ -9,6 +9,8 @@ from  Exception import *
 import os
 import requests
 from selenium.webdriver.support.select import Select
+from Database import Database
+
 '''from selenium.webdriver.support.select import Select
 ua = UserAgent()
 userAgent = ua.random
@@ -16,31 +18,99 @@ print(userAgent)
 '''
 class SeleniumScraper(object):
 
-    def __init__(self,ua=""):
+    def __init__(self,ua="", anwesend=False):
         self.url = ""
+        self.hoster = Database().getHoster()
         self.ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.6 Safari/537.11"
+        self.found = {"720p": False, "1080p": False, "altLink": False}#my_dict.update({"b":True})
         if len(ua) > 1:
             self.ua = ua
+        
 
     def __del__(self):
         self.closeBrowser()
-
-    def findStreams(self, objekt):
-        isMovie= ""
-        if(objekt[1] == 1): # if objekt is movie or not 
-            isMovie= "movie"
-            self.checkCine(movieName=objekt[4],imdb=objekt[8])
-        else:
-            self.check_Bs()
-            self.check_STo()
-        self.check_Streamkiste(movieName=objekt[4],imdb=objekt[8], if([objekt]))
+    
     def open_Chrome(self,link):
         self.setChromeData()
         self.browser = uc.Chrome(options=self.options)#, user_data_dir="/home/user/.config/google-chrome")
         self.url = link
         time.sleep(3)
-        self.browser.get(self.url)  # add lang
-        time.sleep(5) # make waiter 
+        self.getWaitUrl(self.url)  # add lang
+        # make waiter  
+    
+    def setChromeData(self):
+        self.url, self.Browser, self.title = "","",""
+        self.options = uc.ChromeOptions()
+       # self.options.add_argument("-user-agent='"+self.ua+"'")
+        self.options.user_data_dir = "/home/user/.config/google-chrome"
+        #self.options.user_data_dir = "Default"
+        #vdisplay = Xvfb(width=1920, height=1080, visible=0)
+        #Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.6 Safari/537.11
+    def closeBrowser(self):
+        if hasattr(self, 'browser') is True:
+            self.browser.quit()
+        print("close")
+    
+    def getWaitUrl(self,url): # add ad waiter
+        self.browser.get(url)
+        time.sleep(5)
+    
+    def getHoster(self):
+        if self.found.get['720p']:
+            return self.hoster
+        elif self.found.get['1080p']:
+            return self.hoster[:3] #check  and may thing about something that alt link is secure 
+
+    def tryToPress(self,xpath="//div[@class='hoster-player']", dryRun=False):
+        if len(self.browser.find_elements(By.XPATH, xpath)) > 0:
+                if dryRun is True: return True 
+                self.scrollAndClick(xpath)
+        return False
+
+    def beep(self):
+        duration = 1 # seconds
+        freq = 100  # Hz
+        os.system('play -nq -t alsa synth {} sine {}'.format(duration, freq))        
+    #self.found = {"720p": False, "1080p": False, "altLink": False}#my_dict.update({"b":True})
+    def adCheck(self):
+        print("startADCheck")
+        #weird Bug some links always dont refresh title
+        try:
+            self.browser.title
+        except:
+            self.browser.switch_to.window(self.browser.window_handles[0])
+            time.sleep(1)
+        #may not neded
+        if len(self.browser.window_handles) == 1 or self.title[0:10] == self.browser.title[0:10]:
+            print(self.title[0:10]+ " - "+ self.browser.title[0:10])
+            print("no active ad tab found")
+            return True
+        #neded
+        size = len(self.browser.window_handles) - 1
+        for counter, item in enumerate(reversed(self.browser.window_handles)):
+            self.browser.switch_to.window(self.browser.window_handles[size - counter])
+            time.sleep(3)
+            if self.title[0:10] != self.browser.title[0:10]:
+                print("Close ad")
+                self.browser.close()  # close tab
+                time.sleep(1)
+        try:
+            self.browser.switch_to.window(self.browser.window_handles[0])
+        except:
+            print("Cant find browser")
+            self.setChromeData()
+            self.get_link(self.url)
+            return
+
+    def findStreams(self, objekt):
+        isMovie= ""
+        if(objekt[1] == 1): # if objekt is movie or not 
+            isMovie= "movie"
+           # self.checkCine(movieName=objekt[4],imdb=objekt[8])
+        else:
+            self.check_Bs()
+            #self.check_STo()
+        self.check_Streamkiste(movieName=objekt[4],imdb=objekt[8])
     
     def getAllKisteLinks(self,isMovie):
         links = []
@@ -76,21 +146,23 @@ class SeleniumScraper(object):
         last_Element_Found= True
         links = []
         counter =1
-
-    
-        links = self.getAllKisteLinks(isMovie)
-        self.try_Kiste_Links(links)
-        for link in links:
-            self.browser.get(link)
-            time.sleep(5)
-            print("serac")
-            if imdb not in self.browser.find_element(By.CSS_SELECTOR, "#content > div > div.single-content.movie > div.rating > div.vote > div > div.site-vote > span > a").get_attribute('href'):
-                print("not found")
-                break
-         
-
-
-
+        #add imf no imdb found
+        for x in range(1, 2):
+            
+            links = self.getAllKisteLinks(isMovie, links)
+            self.try_Kiste_Links(links)
+            for link in links:
+                self.getWaitUrl(link)
+                print("serac")
+                
+                if imdb not in self.browser.find_element(By.CSS_SELECTOR, "#content > div > div.single-content.movie > div.rating > div.vote > div > div.site-vote > span > a").get_attribute('href'):
+                    print("not found")
+                    self.getWaitUrl(url)    
+                    timer = random(1000,4000) 
+                    (self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight); setTimeout(print('hi'), "+ timer +")" ) for _ in range(5))
+                    break
+                    
+                #Found
                 self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
                 time.sleep(1)
                 dropdown = Select(self.browser.find_element(By.ID, "rel"))
@@ -111,18 +183,6 @@ class SeleniumScraper(object):
            # listElement = soup.select("#content > div > div > div.fix-film_item.fix_category.clearfix.list_items > div:nth-child("+str(counter)+") > div > div.movie-poster > aa")
             #if link == None:counter = 0
     
-    def setChromeData(self):
-        self.url, self.Browser, self.title = "","",""
-        self.options = uc.ChromeOptions()
-       # self.options.add_argument("-user-agent='"+self.ua+"'")
-        self.options.user_data_dir = "/home/user/.config/google-chrome"
-        #self.options.user_data_dir = "Default"
-        #vdisplay = Xvfb(width=1920, height=1080, visible=0)
-        #Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.6 Safari/537.11
-    def closeBrowser(self):
-        if hasattr(self, 'browser') is True:
-            self.browser.quit()
-        print("close")
     
     def check_Bs(self, url, host, anwesend=False):
         self.open_Chrome("https://bs.to") 
@@ -216,36 +276,6 @@ class SeleniumScraper(object):
                         self.browser.switch_to.default_content()
         raise videoBroken
 
-    def adCheck(self):
-        print("startADCheck")
-        #weird Bug some links always dont refresh title
-        try:
-            self.browser.title
-        except:
-            self.browser.switch_to.window(self.browser.window_handles[0])
-            time.sleep(1)
-        #may not neded
-        if len(self.browser.window_handles) == 1 or self.title[0:10] == self.browser.title[0:10]:
-            print(self.title[0:10]+ " - "+ self.browser.title[0:10])
-            print("no active ad tab found")
-            return True
-        #neded
-        size = len(self.browser.window_handles) - 1
-        for counter, item in enumerate(reversed(self.browser.window_handles)):
-            self.browser.switch_to.window(self.browser.window_handles[size - counter])
-            time.sleep(3)
-            if self.title[0:10] != self.browser.title[0:10]:
-                print("Close ad")
-                self.browser.close()  # close tab
-                time.sleep(1)
-        try:
-            self.browser.switch_to.window(self.browser.window_handles[0])
-        except:
-            print("Cant find browser")
-            self.setChromeData()
-            self.get_link(self.url)
-            return
-
     def scrollAndClick(self, xpath="//div[@class='hoster-player']"):
         print("scrollAndClick->" + xpath)
         self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
@@ -254,18 +284,7 @@ class SeleniumScraper(object):
         print("click done")
         time.sleep(2)
         return self.adCheck()
-   
-    def tryToPress(self,xpath="//div[@class='hoster-player']", dryRun=False):
-        if len(self.browser.find_elements(By.XPATH, xpath)) > 0:
-                if dryRun is True: return True 
-                self.scrollAndClick(xpath)
-        return False
-
-    def beep(self):
-        duration = 1 # seconds
-        freq = 100  # Hz
-        os.system('play -nq -t alsa synth {} sine {}'.format(duration, freq))
-        
+           
     def checkCine(self,movieName, imdb): # getLinks for no douple code 
         self.open_Chrome("https://cine.to" )
         input = self.browser.find_element(By.CSS_SELECTOR, 'body > div.container-fluid > div.container-fluid.entries > nav.navbar.navbar-static-top.navbar-search > div > input[type=text]')
@@ -291,8 +310,3 @@ if __name__ == "__main__":
     fetcher = SeleniumScraper("db")
     
     fetcher.check_Streamkiste(str("Die Chroniken von Narnia: Der König von Narnia").replace(" ", "+"), imdb="tt0363771")
-
-
-#streamkiste is in git 
-
- 

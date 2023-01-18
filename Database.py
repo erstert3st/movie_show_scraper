@@ -21,10 +21,11 @@ class Database(object):
             self.connect_db =  self.connect_db =  mysql.connector.connect(
                                 host="server.local",
                                 #host="localhost:3306",
-                                user="user",
+                                user="root",
                                 password="password",
-                                database="Media"
+                                database="Ombi"
                                 )
+            #self.connect_db.set_charset_collation('utf8mb4', 'utf8mb4_general_ci')
             self.cursor =  self.connect_db.cursor()
             print("connected")
             return True

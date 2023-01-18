@@ -1,6 +1,6 @@
 from Database import Database
 from Helper import FileManager, Api
-from Fetcher import fetch
+#from Fetcher import fetch
 from Database import Database
 from SeleniumScraper import SeleniumScraper
 from  Exception import *
@@ -15,42 +15,45 @@ class main(object):
     def main(self):
         db = Database()
         fileManager = FileManager()
-        fetcher = fetch(db)
-        waiting_Videos = db.select(table="WorkToDo")
-        webScraper = SeleniumScraper()
+        #fetcher = fetch(db)
+        waiting_Videos = db.select(table="WorkToDo" ,where="isMovie = '1'")
+        #waiting_Videos = db.select(table="MovieRequests" ,where="1 = 1")
+        #webScraper = SeleniumScraper()
         botDedect = ""
 
         for videos in waiting_Videos:
             try:
-                link = SeleniumScraper(ua=botDedect).findStreams(videos, anwesend=True)
+                availibleHoster = db.select(table="WorkToDo" ,where="isMovie = '1'")
+                link = SeleniumScraper(ua=botDedect,anwesend=True, database=db)
+                link.findStreams(videos )
+
             
             
             
             
-            
-            except videoBroken as err:
-                print(err)
-                hosterList.remove(hoster) 
-                hostString = ','.join(hosterList)
-                sql = db.update(table="Episode", \
-                status="waiting' ,`avl_hoster`= '"+ hostString +"' , `error_msg` = 'error "+hoster+" down",  id = str(episode[0]))
-                continue
-            except captchaLock as err:
-                print(err)
-                time.sleep(random.randint(234, 335))
-                break
-            except botDetection as err:
-                ErrorCounter = ErrorCounter +1
-                waitFor = random.randint(200, 335)
-                if ErrorCounter > 5:
-                    print("Do many Errors")
-                    exit(1)
-                elif ErrorCounter > 2:
-                    waitFor = random.randint(600, 800)
-                botDedect = self.changeUa()
-                print("Errors wait for: " + str(waitFor))
-                time.sleep(waitFor)
-                break
+            # except videoBroken as err:
+            #     print(err)
+            #     hosterList.remove(hoster) 
+            #     hostString = ','.join(hosterList)
+            #     sql = db.update(table="Episode", \
+            #     status="waiting' ,`avl_hoster`= '"+ hostString +"' , `error_msg` = 'error "+hoster+" down",  id = str(episode[0]))
+            #     continue
+            # except captchaLock as err:
+            #     print(err)
+            #     time.sleep(random.randint(234, 335))
+            #     break
+            # except botDetection as err:
+            #     ErrorCounter = ErrorCounter +1
+            #     waitFor = random.randint(200, 335)
+            #     if ErrorCounter > 5:
+            #         print("Do many Errors")
+            #         exit(1)
+            #     elif ErrorCounter > 2:
+            #         waitFor = random.randint(600, 800)
+            #     botDedect = self.changeUa()
+            #     print("Errors wait for: " + str(waitFor))
+            #     time.sleep(waitFor)
+            #     break
 
             except:
                 continue
