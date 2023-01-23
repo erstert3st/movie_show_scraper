@@ -10,6 +10,7 @@ import os
 import requests
 from selenium.webdriver.support.select import Select
 from Database import Database
+import re
 
 '''from selenium.webdriver.support.select import Select
 ua = UserAgent()
@@ -102,19 +103,14 @@ class SeleniumScraper(object):
             self.get_link(self.url)
             return
 
-    def findStreams(self, objekt):
-        isMovie= ""
-        if(objekt[1] == 1): # if objekt is movie or not 
-            isMovie= "movie"
-           # self.checkCine(movieName=objekt[4],imdb=objekt[8])
-        else:
-            self.check_Bs()
-            #self.check_STo()
-        self.check_Streamkiste(movieName=objekt[4],imdb=objekt[8])
+
     
-    def getAllKisteLinks(self,isMovie):
+    def getAllKisteLinks(self,isMovie, isSecond):
         links = []
-        while counter > 0:
+        counter = 1
+        end = 10
+        if isSecond == 2 : end = 200
+        while counter < end :
             counter +=1
             try:
                 tableElement = self.browser.find_element(By.XPATH, "//*[@id='content']/div/div/div[3]/div["+str(counter)+"]")#.get_attribute('src')  
@@ -127,61 +123,84 @@ class SeleniumScraper(object):
         
         return links
 
-    def try_Kiste_Links(self,links,imdb):
+   # def try_Kiste_Links(self,links,imdb):
 
-        for link in links:
-            self.browser.get(link)
-            time.sleep(5)
-            print("serac")
-            if imdb in self.browser.find_element(By.CSS_SELECTOR, "#content > div > div.single-content.movie > div.rating > div.vote > div > div.site-vote > span > a").get_attribute('href'):
-                return True
-                print("found")
-        return False
+    #    for link in links:
+         #   self.browser.get(link)
+       #     time.sleep(5)
+       #     print("serac")
+        #    if imdb in self.browser.find_element(By.CSS_SELECTOR, "#content > div > div.single-content.movie > div.rating > div.vote > div > div.site-vote > span > a").get_attribute('href'):
+         #       return True
+         #       print("found")
+      #  return False
 
-    def check_Streamkiste(self,querry, imdb,isMovie="/movie/"): # getLinks for no douple code 
+    def searchAndClick(self,search,selector, querry,button=""):
+        # find the search box element and enter a search term
+        search_box = self.browser.find_element(selector, search)
+        search_box.send_keys(querry)
+        # find the search button and click it
+        if(len(button) > 1):
+            self.browser.find_element(selector, button).click()
+        time.sleep(5)
+        self.url = self.browser.current_url
+
+    def check_Streamkiste(self,querry, imdb, isMovie="/movie/"): # getLinks for no douple code 
         if(len(imdb) < 1):
             imdb = querry
-        url =  "https://streamkiste.tv/search/" + imdb
+        url =  "https://streamkiste.tv"
         self.open_Chrome(url)
+        if not self.searchrightLinkKiste(imdb, imdb, isMovie):
+            #try to seach without imdb
+            if not self.searchrightLinkKiste(querry, False, isMovie):
+                raise streamKisteSearchError
+
+        #Found
+        self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
+        time.sleep(1)
+        dropdown = Select(self.browser.find_element(By.ID, "rel"))
+        time.sleep(0.8)
+        dropdown.select_by_index(0)
+        time.sleep(1)
+        hosterList = self.browser.find_elements(By.ID,"stream-links")
+        #myhosterList = self.db.getHoster()
+        #sortetList
+        #unsortetList
+        for hoster in hosterList:
+            if self.tryToPress(dryRun=True) is True: #check iframe + get link + hostchecker 
+                print("debug")
+        #if self.scrollAndClick() is True:
+            # if  hoster.find_element(By.CLASS_NAME,"hoster").text in myhosterList:
+
+    # if  imdb in self.browser.find_element(By.CSS_SELECTOR, "#content > div > div.single-content.movie > div.rating > div.vote > div > div.site-vote > span > a").get_attribute('href'):
+    # listElement = soup.select("#content > div > div > div.fix-film_item.fix_category.clearfix.list_items > div:nth-child("+str(counter)+") > div > div.movie-poster > aa")
+    #if link == None:counter = 0
+       
+    def searchrightLinkKiste(self, querry, imdb, isMovie="/movie/"):   
+        self.searchAndClick(search= "s",button= "search-button",selector=By.ID  ,querry=imdb)
         last_Element_Found= True
         links = []
         counter =1
         #add imf no imdb found
-        for x in range(1, 2):
-            
-            links = self.getAllKisteLinks(isMovie, links)
-            self.try_Kiste_Links(links)
+        for x in range(1, 2):           
+            links = self.getAllKisteLinks(isMovie,x)
             for link in links:
                 self.getWaitUrl(link)
                 print("serac")
-                
-                if imdb not in self.browser.find_element(By.CSS_SELECTOR, "#content > div > div.single-content.movie > div.rating > div.vote > div > div.site-vote > span > a").get_attribute('href'):
+                if(imdb == False):
+                    webTitle = re.sub(r'[^\w\s]', '', self.browser.find_element(By.CSS_SELECTOR, "#content > div > div.single-content.movie > div.info-right > div.title > h1").text.lower().replace(" ", ""))
+                    origTitle = re.sub(r'[^\w\s]', '', querry.lower().replace(" ", ""))
+                    if (origTitle in webTitle): imdb = True
+                if imdb not in self.browser.find_element(By.CSS_SELECTOR, "#content > div > div.single-content.movie > div.rating > div.vote > div > div.site-vote > span > a").get_attribute('href') and imdb is not True:
                     print("not found")
-                    self.getWaitUrl(url)    
+                    self.getWaitUrl(self.url)    
                     timer = random(1000,4000) 
                     (self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight); setTimeout(print('hi'), "+ timer +")" ) for _ in range(5))
                     break
+                else:
+                    return True
+        return False
                     
-                #Found
-                self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
-                time.sleep(1)
-                dropdown = Select(self.browser.find_element(By.ID, "rel"))
-                time.sleep(0.8)
-                dropdown.select_by_index(0)
-                time.sleep(1)
-                hosterList = self.browser.find_elements(By.ID,"stream-links")
-                #myhosterList = self.db.getHoster()
-                #sortetList
-                #unsortetList
-                for hoster in hosterList:
-                    if self.tryToPress(dryRun=True) is True: #check iframe + get link + hostchecker 
-                        print("debug")
-                #if self.scrollAndClick() is True:
-                  # if  hoster.find_element(By.CLASS_NAME,"hoster").text in myhosterList:
-
-           # if  imdb in self.browser.find_element(By.CSS_SELECTOR, "#content > div > div.single-content.movie > div.rating > div.vote > div > div.site-vote > span > a").get_attribute('href'):
-           # listElement = soup.select("#content > div > div > div.fix-film_item.fix_category.clearfix.list_items > div:nth-child("+str(counter)+") > div > div.movie-poster > aa")
-            #if link == None:counter = 0
+                
     
     
     def check_Bs(self, url, host, anwesend=False):
@@ -284,29 +303,63 @@ class SeleniumScraper(object):
         print("click done")
         time.sleep(2)
         return self.adCheck()
-           
+
+    def checkSTo(self,serieName, imdb):
+        self.open_Chrome("https://s.to/serien" )
+        self.searchAndClick(search= "serInput", selector=By.ID, querry=serieName.lower())
+        resultList = self.getLinkList(selector=By.ID,search="seriesContainer")
+        for element in  resultList :
+            self.getWaitUrl(element)
+            imdbElement = self.browser.find_element(By.CSS_SELECTOR, "#series > section > div.container.row > div.series-meta.col-md-6-5.col-sm-6.col-xs-12 > div.series-title > a")
+            if imdb in imdbElement.get_attribute('data-imdb'):
+              
+                self.adCheck()
+                found = True
+                break 
+#seriesContainer
+    def getLinkList(self,selector,search):
+        elementList = self.browser.find_elements(By.CSS_SELECTOR,"div.genre[style='display: block;']")
+        elements = elementList.find_element(By.CSS_SELECTOR,"a").get_attribute("href")
+        return [element.get_attribute("href") for element in elementList]
     def checkCine(self,movieName, imdb): # getLinks for no douple code 
         self.open_Chrome("https://cine.to" )
-        input = self.browser.find_element(By.CSS_SELECTOR, 'body > div.container-fluid > div.container-fluid.entries > nav.navbar.navbar-static-top.navbar-search > div > input[type=text]')
-        input.send_keys(movieName)
-        time.sleep(5)
+        self.searchAndClick(search= "/html/body/div[3]/div[2]/nav[1]/div/input", selector=By.XPATH, querry=movieName)        
         
         print(imdb)
-        
-        notFound = True #make go on next page 
-        resultList = self.browser.find_elements(By.CSS_SELECTOR,"body > div.container-fluid > div.container-fluid.entries > section > a ")
-        for result in  resultList :
-           if imdb in result.get_attribute('href'):
-                result.click()
-                self.adCheck()
-                notFound = False
-                break
-        if notFound: raise streamKisteSearchError
+        found = False #make go on next page 
+        #add without imdb
+        while self.browser.find_element(By.CSS_SELECTOR,"body > div.container-fluid > div.container-fluid.entries > nav:nth-child(3) > center > ul:nth-child(3) > li.next > a > i").is_enabled() :
+            resultList = self.browser.find_elements(By.CSS_SELECTOR,"body > div.container-fluid > div.container-fluid.entries > section > a ")
+            for element in  resultList :
+                if imdb in element.get_attribute('href'):
+                    element.click()
+                    self.adCheck()
+                    found = True
+                    break
+            self.browser.find_element(By.CSS_SELECTOR,"body > div.container-fluid > div.container-fluid.entries > nav:nth-child(3) > center > ul:nth-child(3) > li.next > a > i").click()
+            time.sleep(5)
+            
+            
+            
+        if not found: raise streamKisteSearchError
         hosterList = self.browser.find_element(By.CSS_SELECTOR,"#entry > div > div > div.modal-body")
         hosterList = hosterList.findElements(By.tagName("li"))
-        
+    
+    def findStreams(self, objekt):
+        isMovie= ""
+        if(objekt[1] == 1): # if objekt is movie or not 
+            isMovie= "movie"
+           # self.checkCine(movieName=objekt[4],imdb=objekt[8])
+        else:
+            self.check_Bs()
+            #self.check_STo()
+        self.checkCine(movieName=objekt[4],imdb=objekt[8])
+
 if __name__ == "__main__":
     #db =  Database()
     fetcher = SeleniumScraper("db")
     
-    fetcher.check_Streamkiste(str("Die Chroniken von Narnia: Der König von Narnia").replace(" ", "+"), imdb="tt0363771")
+    fetcher.checkSTo("Breaking", imdb="tt0903747")
+
+    #seriesContainer > div:nth-child(5) > ul > li:nth-child(84) > a
+    #seriesContainer > div:nth-child(8) > ul > li:nth-child(122) > a

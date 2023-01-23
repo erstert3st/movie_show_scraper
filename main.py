@@ -23,8 +23,8 @@ class main(object):
 
         for videos in waiting_Videos:
             try:
-                availibleHoster = db.select(table="WorkToDo" ,where="isMovie = '1'")
-                link = SeleniumScraper(ua=botDedect,anwesend=True, database=db)
+                #availibleHoster = db.select(table="WorkToDo" ,where="isMovie = '1'")
+                link = SeleniumScraper(ua=botDedect,anwesend=True)
                 link.findStreams(videos )
 
             

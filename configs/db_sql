@@ -175,7 +175,8 @@ SELECT
     MovieRequests.Error,
     MovieRequests.Info
 FROM
-    MovieRequests;
+    MovieRequests
+    WHERE MovieRequests.Denied != 1 ;
  CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 
     ALTER TABLE  `Ombi`.`MovieRequests`
