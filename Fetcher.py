@@ -83,7 +83,7 @@ class fetch(object):
     def Crawl_Seasons(self, serie):
         seasonList = []
         soup = self.getSoup(str(serie[1]))
-        seasonsDiv = soup.find("div", {"id": "seasons"})
+        seasonsDiv = soup.find("div", {"id": "seasons"})s
         seasonsDiv = seasonsDiv.find_all("li")
         for season in seasonsDiv:
             link = "http://bs.to/" + season.a['href']

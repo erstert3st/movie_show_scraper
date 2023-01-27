@@ -81,7 +81,7 @@ class Database(object):
     
     def getHoster(self):
         try:
-            self.cursor.execute("select `name` from `hoster` where `status` = 'working' ORDER BY priority")
+            self.cursor.execute("select LOWER(name) from Media.hoster where `status` = 'working' ORDER BY priority")
             hosterList = [item[0] for item in self.cursor.fetchall()]
             return hosterList  # return array of Values
             

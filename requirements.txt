@@ -11,3 +11,4 @@ chromedriver_autoinstaller
 SpeechRecognition
 fake_useragent
 pydub
+myjdapi

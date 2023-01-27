@@ -1,5 +1,6 @@
 import undetected_chromedriver.v2 as uc
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.action_chains import ActionChains
 import time
 import random
 #from xvfbwrapper import Xvfb
@@ -9,9 +10,9 @@ from  Exception import *
 import os
 import requests
 from selenium.webdriver.support.select import Select
-from Database import Database
 import re
-
+from Database import Database
+from Helper import Api
 '''from selenium.webdriver.support.select import Select
 ua = UserAgent()
 userAgent = ua.random
@@ -21,7 +22,9 @@ class SeleniumScraper(object):
 
     def __init__(self,ua="", anwesend=False):
         self.url = ""
-        self.hoster = Database().getHoster()
+        self.db = Database()
+        #self.browser = uc.Chrome()
+        self.hoster = self.db.getHoster()
         self.ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.6 Safari/537.11"
         self.found = {"720p": False, "1080p": False, "altLink": False}#my_dict.update({"b":True})
         if len(ua) > 1:
@@ -36,7 +39,7 @@ class SeleniumScraper(object):
         self.browser = uc.Chrome(options=self.options)#, user_data_dir="/home/user/.config/google-chrome")
         self.url = link
         time.sleep(3)
-        self.getWaitUrl(self.url)  # add lang
+        self.getWaitUrl(self.url,5)  # add lang
         # make waiter  
     
     def setChromeData(self):
@@ -52,9 +55,26 @@ class SeleniumScraper(object):
             self.browser.quit()
         print("close")
     
-    def getWaitUrl(self,url): # add ad waiter
-        self.browser.get(url)
+    def checkSwitchTab(self):
+        # Get the list of open window handles
+        window_handles = self.browser.window_handles
+        if len(window_handles) > 1:
+            for window_handle in window_handles:
+                # Don't do anything if it's the same window as the current one
+                if window_handle != self.browser.current_window_handle:
+                    self.browser.switch_to.window(window_handle)
+                    break 
         time.sleep(5)
+
+    def clickWait(self,selectorType,selector,timer,element=""): # add ad waiter
+        if type(element) == str:
+            element= self.browser.find_element(selectorType,selector)
+        element.click()
+        time.sleep(timer)
+    
+    def getWaitUrl(self,url,timer=3): # add ad waiter
+        self.browser.get(url)
+        time.sleep(timer)
     
     def getHoster(self):
         if self.found.get['720p']:
@@ -62,10 +82,10 @@ class SeleniumScraper(object):
         elif self.found.get['1080p']:
             return self.hoster[:3] #check  and may thing about something that alt link is secure 
 
-    def tryToPress(self,xpath="//div[@class='hoster-player']", dryRun=False):
-        if len(self.browser.find_elements(By.XPATH, xpath)) > 0:
+    def tryToPress(self,xpath="//div[@class='hoster-player']", dryRun=False, selectorTyp=By.XPATH):
+        if len(self.browser.find_elements(selectorTyp, xpath)) > 0:
                 if dryRun is True: return True 
-                self.scrollAndClick(xpath)
+                self.scrollAndClick(xpath, selectorTyp)
         return False
 
     def beep(self):
@@ -144,7 +164,44 @@ class SeleniumScraper(object):
         time.sleep(5)
         self.url = self.browser.current_url
 
-    def check_Streamkiste(self,querry, imdb, isMovie="/movie/"): # getLinks for no douple code 
+    def selectDropdown(self,selector,selectorValue,value):
+        dropdown = Select(self.browser.find_element(selector, selectorValue))
+        self.browser.find_element(selector, selectorValue).click()
+        time.sleep(0.8)
+        if type(value) == str:
+            dropdown.select_by_visible_text("Staffel 15")
+            dropdown.select_by_visible_text(value)
+        else:
+            dropdown.select_by_index(value)
+        time.sleep(1)
+
+    def selectDropdown(self,selector,selectorValue,value="0",checkIfFound = ""):
+        dropdown = Select(self.browser.find_element(selector, selectorValue))
+        #self.browser.find_element(selector, selectorValue).click()
+        time.sleep(0.8)
+        if len(checkIfFound) > 1:
+
+            for counter, options in enumerate(dropdown.options):
+                if options.text.find(checkIfFound) > -1: # weird bug
+                    dropdown.select_by_index(counter)
+                    return time.sleep(2)
+            raise streamKisteSearchError
+        if type(value) == str:
+            dropdown.select_by_visible_text(value)
+        else:
+            dropdown.select_by_index(value)
+        time.sleep(2)
+    
+    def sortHosterElements(self,elements):
+       # sorted_elements = [element for element in elements if element.text.lower() in self.hoster]
+        sorted_elements = [element for element in elements if element.text.split("\n")[0].strip().lower() in self.hoster] # split for s.to
+        if len(sorted_elements) > 1:
+            sorted_elements.sort(key=lambda element: self.hoster.index(element.text.split("\n")[0].strip().lower()))
+
+        print(sorted_elements)
+        return sorted_elements
+
+    def check_Streamkiste(self,querry, imdb, isMovie="/movie/", season="", episode=""): # getLinks for no douple code 
         if(len(imdb) < 1):
             imdb = querry
         url =  "https://streamkiste.tv"
@@ -156,18 +213,34 @@ class SeleniumScraper(object):
 
         #Found
         self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
-        time.sleep(1)
-        dropdown = Select(self.browser.find_element(By.ID, "rel"))
-        time.sleep(0.8)
-        dropdown.select_by_index(0)
-        time.sleep(1)
-        hosterList = self.browser.find_elements(By.ID,"stream-links")
-        #myhosterList = self.db.getHoster()
-        #sortetList
-        #unsortetList
-        for hoster in hosterList:
-            if self.tryToPress(dryRun=True) is True: #check iframe + get link + hostchecker 
-                print("debug")
+        time.sleep(2)
+        if isMovie == "/serie/":
+            self.selectDropdown(selector=By.ID,selectorValue= "season", checkIfFound="Staffel " + season)
+            self.selectDropdown(selector=By.ID,selectorValue= "episode", checkIfFound="Ep " + episode)
+        else:
+            self.selectDropdown(By.ID, "rel",0)
+
+        hosterElementList = self.browser.find_elements(By.ID,"stream-links")
+        hosterElementList = self.sortHosterElements(hosterElementList)
+        links = []
+        while len(links) >= 2:
+            for hoster in hosterElementList:
+                try:
+                    self.clickWait("","", 3,hoster)
+                    self.browser.switch_to.frame("iframe")
+                    self.browser.switch_to.frame(0)
+                    self.clickWait(By.CSS_SELECTOR,"body > div.plyr-container", 1)
+                    self.clickWait(By.CSS_SELECTOR,"body > div.plyr-container", 1)
+                    self.clickWait(By.CSS_SELECTOR,"body > div.plyr-container", 5)
+                    link = self.browser.find_element(By.TAG_NAME, "video").get_attribute('src')  
+                    if len(link) > 0:
+                        self.browser.switch_to.default_content()
+                        if requests.head(link).status_code == 302: continue
+                        self.getWaitUrl(link,5)  # add lang
+                        links.append(self.browser.current_url)
+                except:
+                    continue
+            time.sleep(random(80,160))
         #if self.scrollAndClick() is True:
             # if  hoster.find_element(By.CLASS_NAME,"hoster").text in myhosterList:
 
@@ -184,7 +257,7 @@ class SeleniumScraper(object):
         for x in range(1, 2):           
             links = self.getAllKisteLinks(isMovie,x)
             for link in links:
-                self.getWaitUrl(link)
+                self.getWaitUrl(link,5)
                 print("serac")
                 if(imdb == False):
                     webTitle = re.sub(r'[^\w\s]', '', self.browser.find_element(By.CSS_SELECTOR, "#content > div > div.single-content.movie > div.info-right > div.title > h1").text.lower().replace(" ", ""))
@@ -192,7 +265,7 @@ class SeleniumScraper(object):
                     if (origTitle in webTitle): imdb = True
                 if imdb not in self.browser.find_element(By.CSS_SELECTOR, "#content > div > div.single-content.movie > div.rating > div.vote > div > div.site-vote > span > a").get_attribute('href') and imdb is not True:
                     print("not found")
-                    self.getWaitUrl(self.url)    
+                    self.getWaitUrl(self.url,5)    
                     timer = random(1000,4000) 
                     (self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight); setTimeout(print('hi'), "+ timer +")" ) for _ in range(5))
                     break
@@ -201,22 +274,81 @@ class SeleniumScraper(object):
         return False
                     
                 
+    def checkTable(self, checkName,table,episode,episodeName=""):
+        for row in table:
+            cols = row.find_elements(By.TAG_NAME,"td")
+            if cols[0].text == episode and ( checkName or cols[1].text == episodeName):
+               #update serie in db 
+               return  cols[0].find_element(By.TAG_NAME,"a").get_attribute('href') 
+            else:
+                continue
+                
     
-    
-    def check_Bs(self, url, host, anwesend=False):
-        self.open_Chrome("https://bs.to") 
-        #Todo search model 
+    def check_Bs(self,querry, imdb,  season="", episode="",episodeName="",link=""):
+        linkFound = False
+        if(len(link) > 1): 
+            linkFound = True  
+            resultList = [link]  
+        else: 
+            link = "https://bs.to/andere-serien"
         
-        print("browser open")
-        time.sleep(2)
-        # self.browser.maximize_window()
-        if self.url not in self.browser.current_url:raise videoBroken
-        self.title = self.browser.title
-        print("title:" + self.title)
-        self.tryToPress("/html/body")
-        print("first scroll/click done") #
+        self.open_Chrome(link) 
+        
+        if linkFound is False:  
+            self.searchAndClick(search= "serInput", selector=By.ID, querry=querry)        
+#seriesContainer
+            resultList = self.browser.find_elements(By.CSS_SELECTOR,"#seriesContainer li:not(.hidden) a")
+            linkList = [element.get_attribute("href") for element in resultList]     
+        for element in  linkList :
+            if linkFound is False:
+                link = element
+            self.getWaitUrl(link+ "/" +str(int(season))+ "/de")
+            self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
+           # seasonsDiv = self.browser.find_element(By.ID,"seasons")
+        # seasonsDiv = seasonsDiv.find_elements(By.TAG_NAME,"a")
+            #seasonsDiv = seasonsDiv.find_elements(By.TAG_NAME,"li")
+    
+            table = self.browser.find_element(By.CSS_SELECTOR,"#root > section > table")
+            tablerows = table.find_elements(By.TAG_NAME,"tr")
+            link =  self.checkTable(linkFound,tablerows,str(int(episode)),episodeName)
+           
+            if link == "" and linkFound is False:
+                continue
+            else:
+                print("download link and update series link")
+            #link found now 
+                self.getWaitUrl(link,5)
+                self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
+                time.sleep(4)
+                hoster = self.browser.find_elements(By.CSS_SELECTOR,"#root > section > ul.hoster-tabs.top > li > a")
+                hosterElementList = self.sortHosterElements(hoster)
+    
+            for hoster in hosterElementList:
+                self.clickWait("","", 10,hoster)
+                self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
+                for i in range(5):
+                    self.clickWait(By.CSS_SELECTOR,"#root > section > div.hoster-player", random.randint(2,7))
+                    iframe = self.browser.find_elements(By.CSS_SELECTOR,"#root > section > div.hoster-player > iframe")
+                    if len(iframe) >= 1 and i >= 2:
+                        self.browser.switch_to.frame(iframe[0])
+                        time.sleep(1)
+                        link = self.browser.find_element(By.TAG_NAME, "video").get_attribute('src')  
+                        self.browser.switch_to.default_content()
+                        self.getWaitUrl(link,10)
+                        if requests.head(self.browser.current_url).status_code == 302: 
+                            continue
+                        else:                           
+                            return self.browser.current_url
+                        
+                #captcha checker
+              #  while "bs.to" not in self.browser.current_url: self.checkSwitchTab()
+                #self.browser.switch_to.default_content()
 
-        #self.browser.save_screenshot("pics/" + str(y) + ".png")
+
+
+
+
+        raise #bs serie not found 
         for x in range(0, 5):
             time.sleep(1)
             self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
@@ -268,17 +400,18 @@ class SeleniumScraper(object):
         self.FindAndSolveCaptcha(iframe)
         self.browser.switch_to.default_content()
 
-    def playAndSearchLink(self, tag="Video"):
+    def playAndSearchLink(self, ignoreIframe=True, tag="Video",xpath="",selectorTyp=""):
         print("playAndSearchLink")
         link = []
         error = False
         for x in range(0, 15):
-            self.browser.switch_to.default_content()        
-            if self.tryToPress(dryRun=True) is True:
+            #self.browser.switch_to.default_content()        
+            if self.tryToPress(dryRun=True,xpath=xpath,selectorTyp=selectorTyp) is True: #change
             
-                if  self.scrollAndClick() is True:
+                if  self.scrollAndClick(xpath,selectorTyp) is True: #change
                     try:
-                        self.browser.switch_to.frame(self.browser.find_element(By.CSS_SELECTOR, "#root > section > div.hoster-player > iframe"))
+                        if ignoreIframe:
+                            self.browser.switch_to.frame(self.browser.find_element(By.CSS_SELECTOR, "#root > section > div.hoster-player > iframe"))
                         link = self.browser.find_element(By.TAG_NAME, tag).get_attribute('src')  
 
                         if len(link) > 0:
@@ -295,32 +428,54 @@ class SeleniumScraper(object):
                         self.browser.switch_to.default_content()
         raise videoBroken
 
-    def scrollAndClick(self, xpath="//div[@class='hoster-player']"):
+    def scrollAndClick(self, xpath="//div[@class='hoster-player']",selectorTyp=By.XPATH):
         print("scrollAndClick->" + xpath)
         self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
         time.sleep(1)
-        self.browser.find_element(By.XPATH,xpath).click()
+        self.browser.find_element(selectorTyp,xpath).click()
         print("click done")
         time.sleep(2)
         return self.adCheck()
 
-    def checkSTo(self,serieName, imdb):
+    def checkSTo(self,serieName, imdb, season="04",episode="04"):
         self.open_Chrome("https://s.to/serien" )
         self.searchAndClick(search= "serInput", selector=By.ID, querry=serieName.lower())
-        resultList = self.getLinkList(selector=By.ID,search="seriesContainer")
-        for element in  resultList :
-            self.getWaitUrl(element)
+        resultList = self.browser.find_elements(By.CSS_SELECTOR,"#seriesContainer li:not(.hidden) a")
+        linkList = [element.get_attribute("href") for element in resultList]     
+        for element in  linkList :
+            link = element
+            self.getWaitUrl(link)
             imdbElement = self.browser.find_element(By.CSS_SELECTOR, "#series > section > div.container.row > div.series-meta.col-md-6-5.col-sm-6.col-xs-12 > div.series-title > a")
-            if imdb in imdbElement.get_attribute('data-imdb'):
-              
-                self.adCheck()
-                found = True
-                break 
-#seriesContainer
-    def getLinkList(self,selector,search):
-        elementList = self.browser.find_elements(By.CSS_SELECTOR,"div.genre[style='display: block;']")
-        elements = elementList.find_element(By.CSS_SELECTOR,"a").get_attribute("href")
-        return [element.get_attribute("href") for element in elementList]
+            if imdb in imdbElement.get_attribute('data-imdb'):        
+                #self.adCheck()
+                self.getWaitUrl(link+ "/staffel-" +str(int(season)))
+                liste = self.browser.find_element(By.CSS_SELECTOR,"#stream > ul:nth-child(4)")
+                episodenListe = liste.find_elements(By.TAG_NAME,"a")
+                for element in episodenListe:
+                    if element.text == str(int(episode)):
+                        element.click()
+                        break
+                self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
+                hosterlist = self.browser.find_element(By.CSS_SELECTOR,"#wrapper > div.seriesContentBox > div.container.marginBottom > div:nth-child(5) > div.hosterSiteVideo > ul")
+                hoster = hosterlist.find_elements(By.TAG_NAME,"a")
+               # hoster = hosterlist.find_elements(By.TAG_NAME,"h4")
+  
+                hosterElementList = self.sortHosterElements(hoster)
+                linkList = [element.get_attribute("href") for element in hosterElementList]     
+                for link in  linkList :
+                   # self.getWaitUrl(link, 10)
+                    self.browser.execute_script("window.open('"+link+"','_blank');")
+                    time.sleep(4)
+                    self.checkSwitchTab()
+                    #checkcaptcha                  
+                    self.browser.switch_to.default_content()
+                    if requests.head(self.browser.current_url).status_code == 200: 
+                        return self.browser.current_url
+                    else:                           
+                        self.browser.close()
+                        self.checkSwitchTab()
+
+
     def checkCine(self,movieName, imdb): # getLinks for no douple code 
         self.open_Chrome("https://cine.to" )
         self.searchAndClick(search= "/html/body/div[3]/div[2]/nav[1]/div/input", selector=By.XPATH, querry=movieName)        
@@ -328,38 +483,58 @@ class SeleniumScraper(object):
         print(imdb)
         found = False #make go on next page 
         #add without imdb
-        while self.browser.find_element(By.CSS_SELECTOR,"body > div.container-fluid > div.container-fluid.entries > nav:nth-child(3) > center > ul:nth-child(3) > li.next > a > i").is_enabled() :
+        while self.browser.find_element(By.CSS_SELECTOR,"body > div.container-fluid > div.container-fluid.entries > nav:nth-child(3) > center > ul:nth-child(3) > li.next > a > i").is_enabled() and found == False:
             resultList = self.browser.find_elements(By.CSS_SELECTOR,"body > div.container-fluid > div.container-fluid.entries > section > a ")
             for element in  resultList :
                 if imdb in element.get_attribute('href'):
-                    element.click()
-                    self.adCheck()
+                    self.clickWait("","", 3,element)
+                    #self.adCheck()
                     found = True
                     break
-            self.browser.find_element(By.CSS_SELECTOR,"body > div.container-fluid > div.container-fluid.entries > nav:nth-child(3) > center > ul:nth-child(3) > li.next > a > i").click()
-            time.sleep(5)
-            
-            
-            
+            if found == False: self.browser.find_element(By.CSS_SELECTOR,"body > div.container-fluid > div.container-fluid.entries > nav:nth-child(3) > center > ul:nth-child(3) > li.next > a > i").click()
+
+
         if not found: raise streamKisteSearchError
-        hosterList = self.browser.find_element(By.CSS_SELECTOR,"#entry > div > div > div.modal-body")
-        hosterList = hosterList.findElements(By.tagName("li"))
+        hosterElementList = self.browser.find_element(By.CSS_SELECTOR,"#entry > div > div > div.modal-body")
+        hosterElementList= hosterElementList.find_elements(By.TAG_NAME , "li")
+        newHosterElementList = []
+        for hoster in hosterElementList:
+            var = hoster.find_element(By.TAG_NAME, "span")
+            if len(var.text) != 0:
+                newHosterElementList.append(var)
+        hosterElementList = self.sortHosterElements(newHosterElementList)
     
+        for hoster in hosterElementList:
+            self.clickWait("","", 10,hoster)
+            #captcha checker
+            if "cine.to" in self.browser.current_url: self.checkSwitchTab()
+            #self.browser.switch_to.default_content()
+            if requests.head(self.browser.current_url).status_code == 302: 
+                continue
+            else:
+                return self.browser.current_url
+
+
     def findStreams(self, objekt):
-        isMovie= ""
+        links = []
+        isMovie= "/serie/"
         if(objekt[1] == 1): # if objekt is movie or not 
-            isMovie= "movie"
+            isMovie= "/movie/"
            # self.checkCine(movieName=objekt[4],imdb=objekt[8])
+            link = self.checkCine(movieName=objekt[4],imdb=objekt[8])
         else:
-            self.check_Bs()
+         #   self.check_Bs()
             #self.check_STo()
-        self.checkCine(movieName=objekt[4],imdb=objekt[8])
+            print("hi")
+        link = self.check_Streamkiste(objekt[4], imdb=objekt[8], isMovie=isMovie, season=objekt[5],episode=objekt[6])
 
 if __name__ == "__main__":
-    #db =  Database()
+   # db =  Database()
     fetcher = SeleniumScraper("db")
-    
-    fetcher.checkSTo("Breaking", imdb="tt0903747")
-
+    #localHosterList = db.getHoster()
+  #  fetcher.check_Streamkiste("Breaking Bad", imdb="tt0903747", isMovie="/serie/", season="04",episode="04")#g
+   # fetcher.check_Bs("Breaking Bad", imdb="tt0903747",  season="04",episode="04",episodeName="Abgehakt")#g
+    fetcher.checkSTo("Breaking bad", imdb="tt0903747",  season="04",episode="04")#g
+    fetcher.checkCine("1UP", imdb="tt13487922")#g
     #seriesContainer > div:nth-child(5) > ul > li:nth-child(84) > a
     #seriesContainer > div:nth-child(8) > ul > li:nth-child(122) > a

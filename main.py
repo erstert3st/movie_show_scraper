@@ -16,7 +16,7 @@ class main(object):
         db = Database()
         fileManager = FileManager()
         #fetcher = fetch(db)
-        waiting_Videos = db.select(table="WorkToDo" ,where="isMovie = '1'")
+        waiting_Videos = db.select(table="WorkToDo" ,where="isMovie = '0'")
         #waiting_Videos = db.select(table="MovieRequests" ,where="1 = 1")
         #webScraper = SeleniumScraper()
         botDedect = ""

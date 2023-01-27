@@ -125,6 +125,59 @@ class main(object):
             command.run(['pkill', 'chrome'])
         except:
             print("no chrome open")
+
+
+
+    def setLogger(self):
+        http_client.HTTPConnection.debuglevel = 1
+        # You must initialize logging, otherwise you'll not see debug output.
+        logging.basicConfig()
+        logging.getLogger().setLevel(logging.DEBUG)
+        requests_log = logging.getLogger("requests.packages.urllib3")
+        requests_log.setLevel(logging.DEBUG)
+        requests_log.propagate = True
+
+    #edit for movies
+    def sendFiles(self, foldername, link): # array for links
+        response=self.session.post(self.host + "/api/login", data=self.login)
+        #payload={'name':foldername ,'links':["https://uptobox.com/link1", "https://pixeldrain.com/u/link2"]} # array
+       # if "tapecontent.net" in link:
+        #    foldername = seasonId +",_"+serieName+"_,Season"+seasonNr
+        payload={'name':foldername ,'links':link.split(), } # array           
+        payloadJSON = {k: json.dumps(v) for k, v in payload.items()}
+        response = self.session.post(self.host + "/api/addPackage", data=payloadJSON)
+        print(response.text)
+        #if response == ok -> update db 
+        response.close()
+        return (response.text)
+
+    def checkCompleteQue(self):
+        session =self.startApi()
+        response = session.post(self.host + "/api/login", data=self.login)
+        response = session.post(self.host + "/api/getQueueData")  
+        #response = session.post(self.host + "/api/getPackageData", data={'pid': pid})         
+        print(response)
+        response.close()
+
+    def isPidInQue(self, pid):
+        session = self.startApi()
+        response = session.post(self.host + "/api/statusDownloads") 
+        downloadList = response.json()
+        for file in downloadList:
+            if(file['packageID'] == pid):
+                return True
+        return False
+    
+    def startApi(self):
+        session = requests.Session()
+        response = session.post(self.host + "/api/login", data=self.login)
+        return session
+# if __name__ == "__main__":
+#     hi = Api()
+#     # hi.test()
+#     pid = hi.sendFiles("test",["https://868418907.tapecontent.net/radosgw/1jzL8VrYj9TewZ2/_s4urcsElZathUqEivRydCjodmThCCllbyGbKFCOuUFAx7xVZ6-I0h27RdrBFOAp30OeXYJXkU2sdN-oIGCbz02l-1ETuu7om0vbKkkU88E5mNcb7saDToshPITd4Vfot_fkR_QZq4pd559LEbX1MH4EWUIVv7K6OffcnJTlbgHge8St71ozb4uXlKZKztUO9VvTPg013x1pT9GUEdDmTai-87nkLEAbXU3dQR5UebYebriEZh580mRbKZv55PhzAZTQOcnCYnt5effSmcKZlyTacsuD8SJvsqs9enKeuXsLT4y_coa-DWdDRxMqcJkWTjMaV8YVUpPBM42TMIzRIhzdnnh91hYUN1KnEQ/Die+Simpsons.S23E04.Das.Ding.das.aus.Ohio.kam.German.Dubbed.HDTV.XviD-ITG.avi.mp4?stream=1"])
+#     hi.isPidInQue(int(pid))
+
 if __name__ == "__main__":
     hi = main()
     hi.main()
