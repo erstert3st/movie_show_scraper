@@ -81,8 +81,9 @@ class Database(object):
     
     def getHoster(self):
         try:
-            self.cursor.execute("select LOWER(name) from Media.hoster where `status` = 'working' ORDER BY priority")
-            hosterList = [item[0] for item in self.cursor.fetchall()]
+            #self.cursor.execute("select LOWER(name),status from Media.hoster where `status` = 'working' ORDER BY priority")
+            self.cursor.execute("select LOWER(name),status from hoster ORDER BY priority")
+            hosterList= self.cursor.fetchall()
             return hosterList  # return array of Values
             
         except mysql.connector.Error as error:

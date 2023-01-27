@@ -192,11 +192,33 @@ class SeleniumScraper(object):
             dropdown.select_by_index(value)
         time.sleep(2)
     
-    def sortHosterElements(self,elements):
+    def sortHosterElements(self,elements,comeFrom="bs"):
        # sorted_elements = [element for element in elements if element.text.lower() in self.hoster]
-        sorted_elements = [element for element in elements if element.text.split("\n")[0].strip().lower() in self.hoster] # split for s.to
+       # sorted_elements = [element for element in elements if element.text.split("\n")[0].strip().lower() in self.hoster] # split for s.to
+        sorted_elements = []
+        updateHoster = []
+        for element in elements:
+            hosterStr = element.text.split("\n")[0].strip().lower()
+            for hoster in self.hoster:
+                if hoster[0] == hosterStr and hoster[1] == 'working':
+                    sorted_elements.append(element)
+                    break
+                elif hoster[0] == hosterStr :  
+                    break
+            else:
+                updateHoster.append((hosterStr, 99, 'new',comeFrom))
+
+        #sorted_elements = sorted(sorted_elements, key=lambda x: [hoster[0] for hoster in self.hoster if hoster[0] == x][0])
+
+        if(len(updateHoster) > 0):
+            print("update db") 
+            sql = "insert into Hoster(name, priority, status,regex3) values (%s, %s, %s , %s)" 
+            self.db.insertMany(sql,updateHoster)
+       # return sorted_elements
+        
         if len(sorted_elements) > 1:
-            sorted_elements.sort(key=lambda element: self.hoster.index(element.text.split("\n")[0].strip().lower()))
+            hosterList  =   [hoster[0] for hoster in self.hoster] 
+            sorted_elements.sort(key=lambda element: hosterList.index(element.text.split("\n")[0].strip().lower()))
 
         print(sorted_elements)
         return sorted_elements
@@ -221,7 +243,7 @@ class SeleniumScraper(object):
             self.selectDropdown(By.ID, "rel",0)
 
         hosterElementList = self.browser.find_elements(By.ID,"stream-links")
-        hosterElementList = self.sortHosterElements(hosterElementList)
+        hosterElementList = self.sortHosterElements(hosterElementList,"stramkiste")
         links = []
         while len(links) >= 2:
             for hoster in hosterElementList:
@@ -284,7 +306,7 @@ class SeleniumScraper(object):
                 continue
                 
     
-    def check_Bs(self,querry, imdb,  season="", episode="",episodeName="",link=""):
+    def check_Bs(self,querry,   season="", episode="",episodeName="",link=""):
         linkFound = False
         if(len(link) > 1): 
             linkFound = True  
@@ -304,6 +326,7 @@ class SeleniumScraper(object):
                 link = element
             self.getWaitUrl(link+ "/" +str(int(season))+ "/de")
             self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
+            time.sleep(1)
            # seasonsDiv = self.browser.find_element(By.ID,"seasons")
         # seasonsDiv = seasonsDiv.find_elements(By.TAG_NAME,"a")
             #seasonsDiv = seasonsDiv.find_elements(By.TAG_NAME,"li")
@@ -321,7 +344,7 @@ class SeleniumScraper(object):
                 self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
                 time.sleep(4)
                 hoster = self.browser.find_elements(By.CSS_SELECTOR,"#root > section > ul.hoster-tabs.top > li > a")
-                hosterElementList = self.sortHosterElements(hoster)
+                hosterElementList = self.sortHosterElements(hoster,"BS")
     
             for hoster in hosterElementList:
                 self.clickWait("","", 10,hoster)
@@ -460,7 +483,7 @@ class SeleniumScraper(object):
                 hoster = hosterlist.find_elements(By.TAG_NAME,"a")
                # hoster = hosterlist.find_elements(By.TAG_NAME,"h4")
   
-                hosterElementList = self.sortHosterElements(hoster)
+                hosterElementList = self.sortHosterElements(hoster,"S.to")
                 linkList = [element.get_attribute("href") for element in hosterElementList]     
                 for link in  linkList :
                    # self.getWaitUrl(link, 10)
@@ -502,7 +525,7 @@ class SeleniumScraper(object):
             var = hoster.find_element(By.TAG_NAME, "span")
             if len(var.text) != 0:
                 newHosterElementList.append(var)
-        hosterElementList = self.sortHosterElements(newHosterElementList)
+        hosterElementList = self.sortHosterElements(newHosterElementList,"cine")
     
         for hoster in hosterElementList:
             self.clickWait("","", 10,hoster)
@@ -532,8 +555,8 @@ if __name__ == "__main__":
    # db =  Database()
     fetcher = SeleniumScraper("db")
     #localHosterList = db.getHoster()
-  #  fetcher.check_Streamkiste("Breaking Bad", imdb="tt0903747", isMovie="/serie/", season="04",episode="04")#g
-   # fetcher.check_Bs("Breaking Bad", imdb="tt0903747",  season="04",episode="04",episodeName="Abgehakt")#g
+   # fetcher.check_Streamkiste("Breaking Bad", imdb="tt0903747", isMovie="/serie/", season="04",episode="04")#g
+    fetcher.check_Bs("Das Mädchen im Schnee",season="01",episode="01",episodeName="Folge 1")#g
     fetcher.checkSTo("Breaking bad", imdb="tt0903747",  season="04",episode="04")#g
     fetcher.checkCine("1UP", imdb="tt13487922")#g
     #seriesContainer > div:nth-child(5) > ul > li:nth-child(84) > a

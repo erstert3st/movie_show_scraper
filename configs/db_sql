@@ -11,11 +11,11 @@ CREATE TABLE IF NOT EXISTS Serien (
 CREATE TABLE IF NOT EXISTS hoster (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255),
-    priority INT(9) UNIQUE, 
+    priority INT(9), 
     regex1 VARCHAR(255),
     regex2 VARCHAR(255),
     regex3 VARCHAR(255),
-    status varchar(25) NOT NULL CHECK (status IN ('working','test','ERROR')),
+    status varchar(25) NOT NULL CHECK (status IN ('working','test','new','ERROR')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_changed TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) 
