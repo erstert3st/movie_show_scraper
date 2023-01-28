@@ -25,10 +25,10 @@ class main(object):
             try:
                 #availibleHoster = db.select(table="WorkToDo" ,where="isMovie = '1'")
                 link = SeleniumScraper(ua=botDedect,anwesend=True)
-                link.findStreams(videos )
-
-            
-            
+                link.findStreams(videos)
+###########################
+                
+        
             
             
             # except videoBroken as err:

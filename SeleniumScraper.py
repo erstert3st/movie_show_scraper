@@ -1,4 +1,6 @@
 import undetected_chromedriver.v2 as uc
+from selenium import webdriver
+from selenium.webdriver.support.select import Select
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
 import time
@@ -9,10 +11,10 @@ from captcha import captcha
 from  Exception import *
 import os
 import requests
-from selenium.webdriver.support.select import Select
 import re
 from Database import Database
-from Helper import Api
+from Helper import Api,FileManager
+from os import environ
 '''from selenium.webdriver.support.select import Select
 ua = UserAgent()
 userAgent = ua.random
@@ -20,11 +22,13 @@ print(userAgent)
 '''
 class SeleniumScraper(object):
 
-    def __init__(self,ua="", anwesend=False):
+    def __init__(self,ua="", anwesend=False,hoster=[]):
+        environ['LANGUAGE'] = 'en'
         self.url = ""
         self.db = Database()
         #self.browser = uc.Chrome()
-        self.hoster = self.db.getHoster()
+        self.hoster = hoster 
+        if len(hoster) < 1 :self.hoster = self.db.getHoster()
         self.ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.6 Safari/537.11"
         self.found = {"720p": False, "1080p": False, "altLink": False}#my_dict.update({"b":True})
         if len(ua) > 1:
@@ -44,10 +48,18 @@ class SeleniumScraper(object):
     
     def setChromeData(self):
         self.url, self.Browser, self.title = "","",""
-        self.options = uc.ChromeOptions()
+        options = uc.ChromeOptions()
+        #options.add_argument('--headless')
+        #options.add_argument('--disable-gpu')
        # self.options.add_argument("-user-agent='"+self.ua+"'")
-        self.options.user_data_dir = "/home/user/.config/google-chrome"
-        #self.options.user_data_dir = "Default"
+        options.user_data_dir = "/home/user/.config/google-chrome/"
+        options.add_argument("--profile-directory=Profile 122")
+        options.add_argument("--lang=de")
+        options.add_experimental_option('prefs', {'intl.accept_languages':  "de,DE"})
+        options.add_argument("--window-size=1920,1080")
+        self.options = options
+        #options.add_argument("--profile-directory=Default")
+        #self.options.user_data_dir = "Default4"
         #vdisplay = Xvfb(width=1920, height=1080, visible=0)
         #Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.6 Safari/537.11
     def closeBrowser(self):
@@ -66,7 +78,7 @@ class SeleniumScraper(object):
                     break 
         time.sleep(5)
 
-    def clickWait(self,selectorType,selector,timer,element=""): # add ad waiter
+    def clickWait(self,selectorType=By.CSS_SELECTOR,selector="sel",timer=5,element=""): # add ad waiter
         if type(element) == str:
             element= self.browser.find_element(selectorType,selector)
         element.click()
@@ -192,7 +204,7 @@ class SeleniumScraper(object):
             dropdown.select_by_index(value)
         time.sleep(2)
     
-    def sortHosterElements(self,elements,comeFrom="bs"):
+    def sortHosterElements(self,elements,comeFrom="bs",maxLen=3):
        # sorted_elements = [element for element in elements if element.text.lower() in self.hoster]
        # sorted_elements = [element for element in elements if element.text.split("\n")[0].strip().lower() in self.hoster] # split for s.to
         sorted_elements = []
@@ -206,7 +218,8 @@ class SeleniumScraper(object):
                 elif hoster[0] == hosterStr :  
                     break
             else:
-                updateHoster.append((hosterStr, 99, 'new',comeFrom))
+                if len(hosterStr) < 0:
+                    updateHoster.append((hosterStr, 99, 'new',comeFrom))
 
         #sorted_elements = sorted(sorted_elements, key=lambda x: [hoster[0] for hoster in self.hoster if hoster[0] == x][0])
 
@@ -219,7 +232,7 @@ class SeleniumScraper(object):
         if len(sorted_elements) > 1:
             hosterList  =   [hoster[0] for hoster in self.hoster] 
             sorted_elements.sort(key=lambda element: hosterList.index(element.text.split("\n")[0].strip().lower()))
-
+            return sorted_elements[:maxLen]
         print(sorted_elements)
         return sorted_elements
 
@@ -245,23 +258,23 @@ class SeleniumScraper(object):
         hosterElementList = self.browser.find_elements(By.ID,"stream-links")
         hosterElementList = self.sortHosterElements(hosterElementList,"stramkiste")
         links = []
-        while len(links) >= 2:
-            for hoster in hosterElementList:
-                try:
-                    self.clickWait("","", 3,hoster)
-                    self.browser.switch_to.frame("iframe")
-                    self.browser.switch_to.frame(0)
-                    self.clickWait(By.CSS_SELECTOR,"body > div.plyr-container", 1)
-                    self.clickWait(By.CSS_SELECTOR,"body > div.plyr-container", 1)
-                    self.clickWait(By.CSS_SELECTOR,"body > div.plyr-container", 5)
-                    link = self.browser.find_element(By.TAG_NAME, "video").get_attribute('src')  
-                    if len(link) > 0:
-                        self.browser.switch_to.default_content()
-                        if requests.head(link).status_code == 302: continue
-                        self.getWaitUrl(link,5)  # add lang
-                        links.append(self.browser.current_url)
-                except:
-                    continue
+        #while len(links) >= 2:
+        for hoster in hosterElementList:
+            try:
+                self.clickWait("","", 10,hoster)
+                self.browser.switch_to.frame("iframe")
+                self.captchaCheck(By.CSS_SELECTOR,"body > div > div:nth-child(2) > iframe")
+                self.browser.switch_to.frame(0)
+                self.clickWait(By.CSS_SELECTOR,"body > div.plyr-container", 1)
+                self.clickWait(By.CSS_SELECTOR,"body > div.plyr-container", 1)
+                self.clickWait(By.CSS_SELECTOR,"body > div.plyr-container", 5)
+                link = self.browser.find_element(By.TAG_NAME, "video").get_attribute('src')  
+                if len(link) > 0:
+                    self.browser.switch_to.default_content()
+                    self.checkUrl()
+                    links.append(self.browser.current_url)
+            except:
+                continue
             time.sleep(random(80,160))
         #if self.scrollAndClick() is True:
             # if  hoster.find_element(By.CLASS_NAME,"hoster").text in myhosterList:
@@ -349,6 +362,7 @@ class SeleniumScraper(object):
             for hoster in hosterElementList:
                 self.clickWait("","", 10,hoster)
                 self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
+                self.captchaCheck(By.CSS_SELECTOR,"body > div:nth-child(9) > div:nth-child(2) > iframe")
                 for i in range(5):
                     self.clickWait(By.CSS_SELECTOR,"#root > section > div.hoster-player", random.randint(2,7))
                     iframe = self.browser.find_elements(By.CSS_SELECTOR,"#root > section > div.hoster-player > iframe")
@@ -386,28 +400,36 @@ class SeleniumScraper(object):
         self.checkIframe(anwesend)
         return self.playAndSearchLink() 
         
-    def FindAndSolveCaptcha(self, iframe):
+    def findAndSolveCaptcha(self, iframe):
 
         time.sleep(random.randint(5, 15))
         # return "restart"
+        ErrorInfo = False
         self.browser.switch_to.frame(iframe)
         #self.browser.save_screenshot("pics/" + str(y) + ".png")
         print("switching to the recaptcha iframe")
         # clicking to request the audio challange
         self.browser.find_element(By.XPATH, '//*[@id="recaptcha-audio-button"]').click()
-        time.sleep(3)
-        audio_url = self.browser.find_elements(By.CLASS_NAME, "rc-audiochallenge-tdownload-link")[0].get_attribute('href')
-        time.sleep(1) 
-        if len(audio_url) < 1: raise captchaLock
-        # verifying the answer
-        solution = captcha().captchaSolver(audio_url)
-        time.sleep(random.randint(5, 9))
-        # answer_input
-        self.browser.find_element(By.ID, 'audio-response').send_keys(solution)
-        time.sleep(2)
-        # submit_button
-        self.browser.find_element(By.XPATH, '//*[@id="recaptcha-verify-button"]').click()
-        time.sleep(5)
+        while ErrorInfo is False:
+
+            time.sleep(3)
+            audio_url = self.browser.find_elements(By.CLASS_NAME, "rc-audiochallenge-tdownload-link")[0].get_attribute('href')
+            time.sleep(1) 
+            if len(audio_url) < 1: raise captchaLock
+            # verifying the answer
+            solution = captcha().captchaSolver(audio_url)
+            time.sleep(random.randint(5, 9))
+            # answer_input
+            self.browser.find_element(By.ID, 'audio-response').send_keys(solution)
+            time.sleep(2)
+            # submit_button
+            self.browser.find_element(By.XPATH, '//*[@id="recaptcha-verify-button"]').click()
+            time.sleep(10)
+            errorElement = ""
+            errorElement = self.browser.find_elements(By.CSS_SELECTOR,"#rc-audio > div.rc-audiochallenge-error-message")
+            if len(errorElement) < 1 and errorElement[0].text != "Es sind mehrere richtige Lösungen erforderlich. Bitte weitere Aufgaben lösen.":
+                ErrorInfo = True
+        time.sleep(15)
 
 
     def checkIframe(self,anwesend,iframe="//iframe[@title='recaptcha challenge expires in two minutes']"):
@@ -420,7 +442,7 @@ class SeleniumScraper(object):
             time.sleep(15)
             self.checkIframe(anwesend)
             return  
-        self.FindAndSolveCaptcha(iframe)
+        self.findAndSolveCaptcha(iframe)
         self.browser.switch_to.default_content()
 
     def playAndSearchLink(self, ignoreIframe=True, tag="Video",xpath="",selectorTyp=""):
@@ -459,6 +481,14 @@ class SeleniumScraper(object):
         print("click done")
         time.sleep(2)
         return self.adCheck()
+    def captchaCheck(self,selectorType,selector):
+        captchaSearch = []
+        for x in range(1, 2):     
+            captchaSearch =  self.browser.find_elements(selectorType,selector)
+            if len(captchaSearch) > 0: 
+                self.findAndSolveCaptcha(captchaSearch[0])
+                break
+            #   catch b  captchaLock! 
 
     def checkSTo(self,serieName, imdb, season="04",episode="04"):
         self.open_Chrome("https://s.to/serien" )
@@ -487,9 +517,11 @@ class SeleniumScraper(object):
                 linkList = [element.get_attribute("href") for element in hosterElementList]     
                 for link in  linkList :
                    # self.getWaitUrl(link, 10)
-                    self.browser.execute_script("window.open('"+link+"','_blank');")
-                    time.sleep(4)
-                    self.checkSwitchTab()
+                    self.getWaitUrl(link,10)
+                    if "https://s.to/serie/" in self.browser.current_url: self.checkSwitchTab() 
+                    if "https://s.to/redirect/" in self.browser.current_url: self.captchaCheck(By.CSS_SELECTOR,"body > div:nth-child(2) > div:nth-child(2) > iframe")
+
+
                     #checkcaptcha                  
                     self.browser.switch_to.default_content()
                     if requests.head(self.browser.current_url).status_code == 200: 
@@ -499,25 +531,36 @@ class SeleniumScraper(object):
                         self.checkSwitchTab()
 
 
-    def checkCine(self,movieName, imdb): # getLinks for no douple code 
+    def checkCine(self,movieName, imdb, quali=[[0,0],[0,0]],isTestCase=False): # getLinks for no douple code 
+        modul = "Cine"
         self.open_Chrome("https://cine.to" )
+        lang =  self.browser.find_elements(By.XPATH,"/html/body/div[3]/div[2]/nav[1]/div/ul/li/a")
+        if len(lang) > 0 and lang[0].text != "Deutsch":
+            self.browser.save_screenshot("a.png")
+            self.clickWait(element=lang[0],timer=2)
+            self.clickWait(By.XPATH,"/html/body/div[3]/div[2]/nav[1]/div/ul/li/ul/li[3]",2)
+            
+            self.browser.find_element(By.XPATH,"/html/body/div[3]/div[2]/nav[1]/div/ul/li/a")
         self.searchAndClick(search= "/html/body/div[3]/div[2]/nav[1]/div/input", selector=By.XPATH, querry=movieName)        
         
         print(imdb)
         found = False #make go on next page 
         #add without imdb
-        while self.browser.find_element(By.CSS_SELECTOR,"body > div.container-fluid > div.container-fluid.entries > nav:nth-child(3) > center > ul:nth-child(3) > li.next > a > i").is_enabled() and found == False:
+        x =0
+        while found == False and x <= 5:
+            x +=1
             resultList = self.browser.find_elements(By.CSS_SELECTOR,"body > div.container-fluid > div.container-fluid.entries > section > a ")
+            self.browser.save_screenshot("b.png")
             for element in  resultList :
                 if imdb in element.get_attribute('href'):
                     self.clickWait("","", 3,element)
                     #self.adCheck()
                     found = True
                     break
-            if found == False: self.browser.find_element(By.CSS_SELECTOR,"body > div.container-fluid > div.container-fluid.entries > nav:nth-child(3) > center > ul:nth-child(3) > li.next > a > i").click()
+            if found == False: self.clickWait(By.CSS_SELECTOR,"body > div.container-fluid > div.container-fluid.entries > nav:nth-child(3) > center > ul:nth-child(3) > li.next > a > i").click()
 
 
-        if not found: raise streamKisteSearchError
+        if found is False: raise searchError
         hosterElementList = self.browser.find_element(By.CSS_SELECTOR,"#entry > div > div > div.modal-body")
         hosterElementList= hosterElementList.find_elements(By.TAG_NAME , "li")
         newHosterElementList = []
@@ -526,17 +569,38 @@ class SeleniumScraper(object):
             if len(var.text) != 0:
                 newHosterElementList.append(var)
         hosterElementList = self.sortHosterElements(newHosterElementList,"cine")
-    
         for hoster in hosterElementList:
             self.clickWait("","", 10,hoster)
-            #captcha checker
-            if "cine.to" in self.browser.current_url: self.checkSwitchTab()
-            #self.browser.switch_to.default_content()
-            if requests.head(self.browser.current_url).status_code == 302: 
-                continue
-            else:
-                return self.browser.current_url
+            if "cine.to/#t" in self.browser.current_url: self.checkSwitchTab()
+            if "cine.to/out/" in self.browser.current_url: self.captchaCheck(By.CSS_SELECTOR,"body > div > div:nth-child(2) > iframe")
+            link = self.browser.current_url
+            if isTestCase : return self.browser.current_url 
+            self.checkUrl(link,modul,quali[0],quali[1])
+        return True
 
+    def checkUrl(self,link,id,movieOrSerie,modul,curremtBestQuali=["1000","0"],curremtAltQuali=["0","0"]):
+        filemanager = FileManager()
+        reqCode = requests.head(link).status_code
+        if reqCode == 200: 
+            quality = filemanager.checkVideoSize(link)
+            print("found link: " + link)
+            quality = "bug"
+            intNum = int(quality[0]) 
+           
+            if intNum > int(curremtBestQuali[0]):
+                temp= ""
+            elif intNum > int(curremtAltQuali[0]):
+               temp= "temp_"
+            else:
+                return "betterFound"
+            
+            status= modul +" done" 
+            table="movierequest" if "movie" in movieOrSerie else "episoderequest" 
+            sql = "UPDATE `"+table+"` SET `"+temp+"link` = '"+link+"', `"+temp+"link_quali`= '"+quality+"', \
+            `status` = '"+status+"'  WHERE `id` = "  + id
+            self.db.update(sql = sql)
+
+        self.db.insertLog(modul,text="checkUrl: " + link, lvl="2" ,info="reqCode")
 
     def findStreams(self, objekt):
         links = []
@@ -553,11 +617,12 @@ class SeleniumScraper(object):
 
 if __name__ == "__main__":
    # db =  Database()
+    
+    
     fetcher = SeleniumScraper("db")
     #localHosterList = db.getHoster()
    # fetcher.check_Streamkiste("Breaking Bad", imdb="tt0903747", isMovie="/serie/", season="04",episode="04")#g
-    fetcher.check_Bs("Das Mädchen im Schnee",season="01",episode="01",episodeName="Folge 1")#g
-    fetcher.checkSTo("Breaking bad", imdb="tt0903747",  season="04",episode="04")#g
+   # fetcher.check_Bs("Das Mädchen im Schnee",season="01",episode="01",episodeName="Folge 1")#g
+    #fetcher.checkSTo("Breaking bad", imdb="tt0903747",  season="04",episode="04")#g
+    
     fetcher.checkCine("1UP", imdb="tt13487922")#g
-    #seriesContainer > div:nth-child(5) > ul > li:nth-child(84) > a
-    #seriesContainer > div:nth-child(8) > ul > li:nth-child(122) > a

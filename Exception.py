@@ -13,3 +13,6 @@ class invalidImdb(Exception):
 class captchaLock(Exception):
     def __str__(self):
         return "To many request try again later"
+class searchError(Exception):
+    def __str__(self):
+        return "bot is found"

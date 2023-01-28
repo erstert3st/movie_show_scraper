@@ -10,11 +10,14 @@ class Database(object):
         self.connection()
 
     def __del__(self):
+        if self.connect_db.is_connected():
+            self.cursor.close()
+            print("MySQL connection closed.")
        #  if  self.connect_db.is_connected():
          #   self.cursor.close()
          #    self.connect_db.close()
           #  print("MySQL connection is closed")
-        print("fixme")
+        #print("fixme")
             
     def connection(self):
         try:
@@ -28,9 +31,10 @@ class Database(object):
             #self.connect_db.set_charset_collation('utf8mb4', 'utf8mb4_general_ci')
             self.cursor =  self.connect_db.cursor()
             print("connected")
-            return True
+            return self.connect_db.is_connected()
         except mysql.connector.Error as err:
-            print("Erro de conexacao com a base de dados")
+            print("cant connect")
+            return False
         
     def insertMany(self, sql, values):
         try:
@@ -60,13 +64,18 @@ class Database(object):
             #print("insert into Staffel(serien_id, nr, name, link, status) values (%s, %s, %s, %s, %s)"
             print(sql % values)
             self.cursor.execute(sql, values)
-            
             self.connect_db.commit()
             print("commit")
+            return True
         except mysql.connector.Error as error:
             print("Failed to insert into MySQL table {}".format(error))
-        return
-        
+        return False
+    def insertLog(self,modul="database",text="noText",lvl="1",info="info"):
+        sql = "insert into Logs(modul, text, lvl,info) values (%s, %s, %s, %s)"  
+        values = (modul ,text ,lvl,info) 
+        self.insert(sql,values)
+
+    
     #std udate status
     def update(self, table="", status="", id="", sql="", error=""):
         try:

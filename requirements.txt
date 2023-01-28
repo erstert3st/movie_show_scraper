@@ -12,3 +12,4 @@ SpeechRecognition
 fake_useragent
 pydub
 myjdapi
+pytest
