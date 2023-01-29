@@ -4,13 +4,16 @@ import random
 import requests
 from SeleniumScraper import SeleniumScraper
 import socket
+from selenium import webdriver
+import undetected_chromedriver.v2 as uc
+import os 
+import time
 
-# def test_checkCine():
-#     print("hi")
-#     fetcher = SeleniumScraper("db")#, hoster)   
-#     assert len(fetcher.checkCine("1UP", imdb="tt13487922",isTestCase= True)) > 1
-
-def test_ping(name="Ombi",ip="server.local", port="8120"):
+def test_checkBrowser():
+    print("hi")
+    assert SeleniumScraper("db").checkBrowser() == True
+    print(" ")
+def ping(name="",ip="", port=""):
     try:
         # Try to open a socket connection to the specified host and port
         sock = socket.create_connection((ip, port), timeout=5)
@@ -21,22 +24,22 @@ def test_ping(name="Ombi",ip="server.local", port="8120"):
 
     print(name +" is: "+ status +"\n ")
     status = status == "online"
-    assert status == True
     return status
-def test_checkCine():
+
+def checkCine():
     print("hi")
-    fetcher = SeleniumScraper("db")#, hoster)   
-    assert len(fetcher.checkCine("1UP", imdb="tt13487922",isTestCase= True)) >= 1
+    assert len(SeleniumScraper("db").checkCine("1UP", imdb="tt13487922",isTestCase= True)) >= 1
     print(" ")
 
 def test_server_online_via_ping():
     """
     Test case to check if the server is online via ping
     """
-    assert test_ping("JDownloaderWeb","server.local","5800") == True
-    #ping("JDownloaderAPI","server.local:","3129")
-    assert test_ping("jellyfin","server.local","8096") == True
-    assert test_ping("mariaDB","server.local","3306")== True
+    assert ping("JDownloaderWeb","10.0.0.13","5800") == True
+    #ping("JDownloaderAPI","10.0.0.13:","3129")
+    assert ping("jellyfin","10.0.0.13","8096") == True
+    assert ping("mariaDB","10.0.0.13","3306")== True
+    assert ping("Ombi","10.0.0.13","8120")== True
      
 
 
@@ -45,11 +48,11 @@ def test_server_web_server():
     """
     Test case to check server response content
     """
-    test_server_response_content("JDownloaderWeb","http://server.local:5800") 
-    test_server_response_content("jellyfin","http://server.local:8096") 
+    test_server_response_content("JDownloaderWeb","http://10.0.0.13:5800") 
+    test_server_response_content("jellyfin","http://10.0.0.13:8096") 
 
 
-def test_server_response_content(name="ombi",server_url="http://server.local:8120"):
+def test_server_response_content(name="ombi",server_url="http://10.0.0.13:8120"):
     response = requests.get(server_url)
     assert response.status_code == 200
     assert response.headers['content-type'] == 'text/html'

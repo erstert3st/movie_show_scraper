@@ -1,4 +1,6 @@
 import mysql
+import weakref
+
 from mysql.connector import connect, errorcode, errors
 #Todo init self.db
 #Todo logger
@@ -8,21 +10,20 @@ class Database(object):
         self.connect_db = None
         self.cursor = None
         self.connection()
+        self.cursorCheck = weakref.ref(self.cursor)
 
     def __del__(self):
         if self.connect_db.is_connected():
-            self.cursor.close()
+            if self.cursorCheck() is not None:
+                print(self.cursor)
+                self.cursor.close()
             print("MySQL connection closed.")
-       #  if  self.connect_db.is_connected():
-         #   self.cursor.close()
-         #    self.connect_db.close()
-          #  print("MySQL connection is closed")
-        #print("fixme")
+
             
     def connection(self):
         try:
             self.connect_db =  self.connect_db =  mysql.connector.connect(
-                                host="server.local",
+                                host="10.0.0.13",
                                 #host="localhost:3306",
                                 user="root",
                                 password="password",
@@ -133,123 +134,12 @@ class Database(object):
         Where Episode.link = '' Or Episode.link is null AND Episode.avl_hoster != '' AND 
             Episode.avl_hoster is NOT null AND Serien.id = '6547' AND Episode.status = 'waiting' 
         ORDER BY RAND() """)
-    # @staticmethod
-    # def find_group(atributo, coleccao, group):
-    #     try:            Episode.avl_hoster is NOT null AND Staffel.nr BETWEEN 0 AND 30 AND Serien.id = '6762' AND Episode.status = 'waiting' 
-
-    #         my_query = "select {} from {} group by {}".format(atributo, coleccao,s group)
-    #         self.cursor.execute(my_query)
-    #         return self.cursor.fetchall()
-
-
-    #     except mysql.connector.ProgrammingError as err:
-    #         if err.errno == errorcode.ER_SYNTAX_ERROR:
-    #             print("Erro de sintaxe, verfique a consulta SQL!!")
-
-    #     except mysql.connector.errors.DatabaseError as e:
-    #         print("==========++++++@@@@@@@@@@@@@@@@@{}".format(e.msg))
-
-    #     except mysql.connector.InterfaceError as e:
-    #         raise mysql.connector.InterfaceError("{} Interface error".format(e.msg))
-
-    # @staticmethod
-    # def find_one_only(atributo, coleccao, condicao):
-    #     try:
-    #         my_query = "select {} from {} where {}".format(atributo, coleccao, condicao)
-    #         self.cursor.execute(my_query)
-    #         return self.cursor.fetchone()
-    #     except mysql.connector.ProgrammingError as err:
-    #         if err.errno == errorcode.ER_SYNTAX_ERROR:
-    #             print("Erro de sintaxe, verfique a consulta SQL!!")
-    #             return None
-    #     except mysql.connector.errors.DatabaseError as e:
-    #         print("{}".format(e.msg))
-    #         return None
-
-    #     except AttributeError:
-    #         print("Bugs:  {}".format(AttributeError))
-
-    #         return None
-    #     except mysql.connector.InterfaceError as e:
-    #         raise mysql.connector.InterfaceError("{} Interface error".format(e.msg))
-
-    # @staticmethod
-    # def find_by_query(query):
-    #     try:
-    #         self.cursor.execute(query)
-    #         return self.cursor.fetchall()
-
-    #     except mysql.connector.ProgrammingError as err:
-    #         if err.errno == errorcode.ER_SYNTAX_ERROR:
-    #             print("Erro de sintaxe, verfique a consulta SQL!!")
-
-    #     except mysql.connector.errors.DatabaseError as e:
-    #         print("==========++++++@@@@@@@@@@@@@@@@@{}".format(e.msg))
-    #         raise e
-
-    #     except mysql.connector.InterfaceError as e:
-    #         raise mysql.connector.InterfaceError("{} Interface error".format(e.msg))
-
-    # @staticmethod
-    # def find(atributo, coleccao):
-    #     try:
-    #         my_query = "select {} from {}".format(atributo, coleccao)
-    #         self.cursor.execute(my_query)
-    #         return self.cursor.fetchall()
-    #     except mysql.connector.ProgrammingError as err:
-    #         if err.errno == errorcode.ER_SYNTAX_ERROR:
-    #             print("Erro de sintaxe, verfique a consulta SQL!!")
-    #     except mysql.connector.InterfaceError as e:
-    #         raise mysql.connector.InterfaceError("{} Interface error".format(e.msg))
-
-    # @staticmethod
-    # def update_one(atributo, colleccao, condicao):
-    #     try:
-    #         my_query = "update {} set {} where {}".format(colleccao, atributo, condicao)
-    #         self.cursor.execute(my_query)
-    #     except mysql.connector.ProgrammingError as err:
-    #         raise err.msg
-
-    #     except mysql.connector.DataError as err:
-    #         raise err.msg
-
-    #     except mysql.connector.IntegrityError as err:
-    #         raise err.msg
-
-    #     except mysql.connector.DatabaseError as err:
-    #         raise err.msg
-
-    #     except mysql.connector.Error as err:
-    #         raise err.msg
-
-
-    # @staticmethod
-    # def update_all(atributo, colleccao):
-    #     try:
-    #         my_query = "update {} set {}".format(colleccao, atributo)
-    #         self.cursor.execute(my_query)
-    #     except mysql.connector.ProgrammingError as err:
-    #         if err.errno == errorcode.ER_SYNTAX_ERROR:
-    #             print("Erro de sintaxe, verfique a consulta SQL!!")
-
-    # @staticmethod
-    # def delete_all(coleccao):
-    #     try:
-    #         my_query = "delete {}".format(coleccao)
-    #         self.cursor.execute(my_query)
-    #     except mysql.connector.ProgrammingError as err:
-    #         if err.errno == errorcode.ER_SYNTAX_ERROR:
-    #             print("Erro de sintaxe, verfique a consulta SQL!!")
-
-    # @staticmethod
-    # def delete_one(coleccao, condicao):
-    #     try:
-    #         my_query =  "delete from {} where {}".format(coleccao,condicao)
-    #         self.cursor.execute(my_query)
-    #     except mysql.connector.ProgrammingError as err:
-    #         if err.errno == errorcode.ER_SYNTAX_ERROR:
-    #             print("Erro de sintaxe, verfique a consulta SQL!!")
-#if __name__ == "__main__":
-    #Database().connection()
-  #  print("done")
+if __name__ == "__main__":
+    print("start")
+    database = Database()
+    database.insertLog(modul="test",text="testDocer" ,lvl="test",info="testDocer")
+    result = database.select(my_query = "SELECT text FROM Logs WHERE info ='testDocer'")
+    print(result)
+    print("done")
+    #database.__del__()
 #https://github.com/neldomarcelino/museuonline/blob/a06290eaa1874b365af9e58ae2ccbac6eca07f65/src/database/database.py

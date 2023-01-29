@@ -15,6 +15,8 @@ import re
 from Database import Database
 from Helper import Api,FileManager
 from os import environ
+from selenium.webdriver.common.keys import Keys
+import fileinput
 '''from selenium.webdriver.support.select import Select
 ua = UserAgent()
 userAgent = ua.random
@@ -36,32 +38,57 @@ class SeleniumScraper(object):
         
 
     def __del__(self):
-        self.closeBrowser()
-    
-    def open_Chrome(self,link):
-        self.setChromeData()
-        self.browser = uc.Chrome(options=self.options)#, user_data_dir="/home/user/.config/google-chrome")
+        #self.closeBrowser()
+        print("done")
+    def open_Chrome(self,link,timer=1):
+        self.user_data_dir=os.getenv("CHROME_USR_DIR","/home/user/.config/google-chrome/")
+        self.getChromeData(self.user_data_dir,True)
+        time.sleep(3)
+        self.browser = uc.Chrome(user_data_dir=self.user_data_dir,options=self.options)
         self.url = link
         time.sleep(3)
         self.getWaitUrl(self.url,5)  # add lang
-        # make waiter  
+        time.sleep(timer)
     
-    def setChromeData(self):
+    def remove_RestoreBubble(self,text_file_path, text_to_search, replacement_text):
+        try:
+            with fileinput.FileInput(text_file_path, inplace=True, backup='.bak') as file:
+                for line in file:
+                    print(line.replace(text_to_search, replacement_text), end='')
+        except:
+            print("error by bypass restore notif")
+
+    def getChromeData(self,userDir="",skipRemoveError=False):
         self.url, self.Browser, self.title = "","",""
         options = uc.ChromeOptions()
+
         #options.add_argument('--headless')
         #options.add_argument('--disable-gpu')
        # self.options.add_argument("-user-agent='"+self.ua+"'")
-        options.user_data_dir = "/home/user/.config/google-chrome/"
-        options.add_argument("--profile-directory=Profile 122")
+        #options.user_data_dir = "/home/user/.config/google-chrome"
+        #options.user_data_dir = userDir
+        #options.add_argument("user-data-dir='/home/user/.config/google-chrome'")
+        options.add_argument("--profile-directory=Default")
+       # options.add_argument("--profile-directory=Profile 122")
         options.add_argument("--lang=de")
         options.add_experimental_option('prefs', {'intl.accept_languages':  "de,DE"})
         options.add_argument("--window-size=1920,1080")
+        #options.add_extension('/home/user/Schreibtisch/SCRPPER/seleniumTest/configs/ublock.crx')
+        options.add_argument("--disable-session-crashed-bubble")
+       # options.add_argument("--load-extension='/home/user/Dokumente/seleniumTest/configs/ublo/extension_1_46_0_1.crx'")
+        if skipRemoveError is False:
+            self.remove_RestoreBubble(userDir + '/Default/Preferences', 'Crashed', 'none') # needs to be open once
+            self.remove_RestoreBubble(userDir + '/Default/Preferences', 'exited_cleanly', 'true')
         self.options = options
+        return options
+        #check if ublock is installedoptions.add_argument('load-extension=' + path_to_extension)
+
         #options.add_argument("--profile-directory=Default")
         #self.options.user_data_dir = "Default4"
         #vdisplay = Xvfb(width=1920, height=1080, visible=0)
         #Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.6 Safari/537.11
+    
+    #fixme
     def closeBrowser(self):
         if hasattr(self, 'browser') is True:
             self.browser.quit()
@@ -93,12 +120,6 @@ class SeleniumScraper(object):
             return self.hoster
         elif self.found.get['1080p']:
             return self.hoster[:3] #check  and may thing about something that alt link is secure 
-
-    def tryToPress(self,xpath="//div[@class='hoster-player']", dryRun=False, selectorTyp=By.XPATH):
-        if len(self.browser.find_elements(selectorTyp, xpath)) > 0:
-                if dryRun is True: return True 
-                self.scrollAndClick(xpath, selectorTyp)
-        return False
 
     def beep(self):
         duration = 1 # seconds
@@ -340,10 +361,6 @@ class SeleniumScraper(object):
             self.getWaitUrl(link+ "/" +str(int(season))+ "/de")
             self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
             time.sleep(1)
-           # seasonsDiv = self.browser.find_element(By.ID,"seasons")
-        # seasonsDiv = seasonsDiv.find_elements(By.TAG_NAME,"a")
-            #seasonsDiv = seasonsDiv.find_elements(By.TAG_NAME,"li")
-    
             table = self.browser.find_element(By.CSS_SELECTOR,"#root > section > table")
             tablerows = table.find_elements(By.TAG_NAME,"tr")
             link =  self.checkTable(linkFound,tablerows,str(int(episode)),episodeName)
@@ -377,29 +394,8 @@ class SeleniumScraper(object):
                         else:                           
                             return self.browser.current_url
                         
-                #captcha checker
-              #  while "bs.to" not in self.browser.current_url: self.checkSwitchTab()
-                #self.browser.switch_to.default_content()
-
-
-
-
-
         raise #bs serie not found 
-        for x in range(0, 5):
-            time.sleep(1)
-            self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
-            if self.tryToPress(xpath="//iframe[@title='recaptcha challenge expires in two minutes']", dryRun=True) == True:
-                break
-
-            if self.tryToPress() == True:
-                if x > 4:
-                     return self.playAndSearchLink() # no captcha
-                continue
-
-        self.checkIframe(anwesend)
-        return self.playAndSearchLink() 
-        
+      
     def findAndSolveCaptcha(self, iframe):
 
         time.sleep(random.randint(5, 15))
@@ -432,55 +428,6 @@ class SeleniumScraper(object):
         time.sleep(15)
 
 
-    def checkIframe(self,anwesend,iframe="//iframe[@title='recaptcha challenge expires in two minutes']"):
-        iframe = self.browser.find_element(By.XPATH,iframe)
-        if iframe.is_displayed() is False:
-            return
-        print("captcha found")
-        if anwesend is True:
-            self.beep()
-            time.sleep(15)
-            self.checkIframe(anwesend)
-            return  
-        self.findAndSolveCaptcha(iframe)
-        self.browser.switch_to.default_content()
-
-    def playAndSearchLink(self, ignoreIframe=True, tag="Video",xpath="",selectorTyp=""):
-        print("playAndSearchLink")
-        link = []
-        error = False
-        for x in range(0, 15):
-            #self.browser.switch_to.default_content()        
-            if self.tryToPress(dryRun=True,xpath=xpath,selectorTyp=selectorTyp) is True: #change
-            
-                if  self.scrollAndClick(xpath,selectorTyp) is True: #change
-                    try:
-                        if ignoreIframe:
-                            self.browser.switch_to.frame(self.browser.find_element(By.CSS_SELECTOR, "#root > section > div.hoster-player > iframe"))
-                        link = self.browser.find_element(By.TAG_NAME, tag).get_attribute('src')  
-
-                        if len(link) > 0:
-                            self.browser.switch_to.default_content()
-                            if requests.head(link).status_code == 302: raise videoBroken 
-                            self.browser.get(link)  # add lang
-                            time.sleep(5)
-                            return self.browser.current_url
-                    except videoBroken:
-                        raise videoBroken 
-                    except:
-                        if self.browser.find_element(By.XPATH, "/html/body").text == "File was deleted" or error: # Vidoza old fehlen Streamtabe 
-                            raise videoBroken 
-                        self.browser.switch_to.default_content()
-        raise videoBroken
-
-    def scrollAndClick(self, xpath="//div[@class='hoster-player']",selectorTyp=By.XPATH):
-        print("scrollAndClick->" + xpath)
-        self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
-        time.sleep(1)
-        self.browser.find_element(selectorTyp,xpath).click()
-        print("click done")
-        time.sleep(2)
-        return self.adCheck()
     def captchaCheck(self,selectorType,selector):
         captchaSearch = []
         for x in range(1, 2):     
@@ -530,7 +477,11 @@ class SeleniumScraper(object):
                         self.browser.close()
                         self.checkSwitchTab()
 
-
+    def checkBrowser(self):
+        url = "https://d3ward.github.io/toolz/adblock"
+        self.open_Chrome(url,10 )
+        self.browser.save_screenshot(time.strftime("%Y-%m-%d_%H-%M.%S", time.localtime()) + ".png")
+        return True
     def checkCine(self,movieName, imdb, quali=[[0,0],[0,0]],isTestCase=False): # getLinks for no douple code 
         modul = "Cine"
         self.open_Chrome("https://cine.to" )
@@ -624,5 +575,9 @@ if __name__ == "__main__":
    # fetcher.check_Streamkiste("Breaking Bad", imdb="tt0903747", isMovie="/serie/", season="04",episode="04")#g
    # fetcher.check_Bs("Das Mädchen im Schnee",season="01",episode="01",episodeName="Folge 1")#g
     #fetcher.checkSTo("Breaking bad", imdb="tt0903747",  season="04",episode="04")#g
-    
-    fetcher.checkCine("1UP", imdb="tt13487922")#g
+    #installUblock
+    hi = fetcher.checkCine("1UP", imdb="tt13487922",isTestCase=True)#g
+    hi = fetcher.checkCine("1UP", imdb="tt13487922",isTestCase=True)#g
+    print(hi)
+    fetcher.closeBrowser()
+   # fetcher.installUblock()
