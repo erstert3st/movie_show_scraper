@@ -5,7 +5,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
 import time
 import random
-#from xvfbwrapper import Xvfb
+from pyvirtualdisplay import Display
 import speech_recognition  as sr
 from captcha import captcha
 from  Exception import *
@@ -17,6 +17,8 @@ from Helper import Api,FileManager
 from os import environ
 from selenium.webdriver.common.keys import Keys
 import fileinput
+from xvfbwrapper import Xvfb
+import debugpy
 '''from selenium.webdriver.support.select import Select
 ua = UserAgent()
 userAgent = ua.random
@@ -25,7 +27,7 @@ print(userAgent)
 class SeleniumScraper(object):
 
     def __init__(self,ua="", anwesend=False,hoster=[]):
-        environ['LANGUAGE'] = 'en'
+        environ['LANGUAGE'] = 'deu'
         self.url = ""
         self.db = Database()
         #self.browser = uc.Chrome()
@@ -38,18 +40,32 @@ class SeleniumScraper(object):
         
 
     def __del__(self):
+      #  self.disp.stop()
         #self.closeBrowser()
         print("done")
+    
     def open_Chrome(self,link,timer=1):
         self.user_data_dir=os.getenv("CHROME_USR_DIR","/home/user/.config/google-chrome/")
         self.getChromeData(self.user_data_dir,True)
         time.sleep(3)
+        
+        if True: self.activateRemoteDebugging()
+        
         self.browser = uc.Chrome(user_data_dir=self.user_data_dir,options=self.options)
         self.url = link
         time.sleep(3)
         self.getWaitUrl(self.url,5)  # add lang
         time.sleep(timer)
-    
+        return True 
+    def activateRemoteDebugging(self):
+    # 5678 is the default attach port in the VS Code debug configurations. Unless a host and port are specified, host defaults to 127.0.0.1
+        #
+        #debugpy.listen(5678)
+        print("Waiting for debugger attach")
+        #debugpy.wait_for_client()
+      #  debugpy.breakpoint()
+        print('break on this line')
+
     def remove_RestoreBubble(self,text_file_path, text_to_search, replacement_text):
         try:
             with fileinput.FileInput(text_file_path, inplace=True, backup='.bak') as file:
@@ -60,21 +76,31 @@ class SeleniumScraper(object):
 
     def getChromeData(self,userDir="",skipRemoveError=False):
         self.url, self.Browser, self.title = "","",""
+        if os.getenv("CHROME_USR_DIR") is not None:
+             vdisplay = Xvfb(width=1920, height=1080, colordepth=16)
+           #  vdisplay = Xvfb(width=1500, height=730, colordepth=16)
+             vdisplay.start()
+            #self.disp = Display(backend="xvnc",size=(100, 60),color_depth=24 ,rfbport=2020)
+           # self.disp.start()
+            # display is active
+           
+            # display is stopped
         options = uc.ChromeOptions()
 
-        #options.add_argument('--headless')
-        #options.add_argument('--disable-gpu')
+        options.add_argument('--headless')
+        options.add_argument('--disable-gpu')
+        options.add_argument("--no-sandbox")
        # self.options.add_argument("-user-agent='"+self.ua+"'")
         #options.user_data_dir = "/home/user/.config/google-chrome"
         #options.user_data_dir = userDir
         #options.add_argument("user-data-dir='/home/user/.config/google-chrome'")
         options.add_argument("--profile-directory=Default")
-       # options.add_argument("--profile-directory=Profile 122")
+       # options.add_argument("--profile-directory=test_clean")
         options.add_argument("--lang=de")
-        options.add_experimental_option('prefs', {'intl.accept_languages':  "de,DE"})
+        #options.add_experimental_option('prefs', {'intl.accept_languages':  "de,DE"})
         options.add_argument("--window-size=1920,1080")
         #options.add_extension('/home/user/Schreibtisch/SCRPPER/seleniumTest/configs/ublock.crx')
-        options.add_argument("--disable-session-crashed-bubble")
+        #options.add_argument("--disable-session-crashed-bubble")
        # options.add_argument("--load-extension='/home/user/Dokumente/seleniumTest/configs/ublo/extension_1_46_0_1.crx'")
         if skipRemoveError is False:
             self.remove_RestoreBubble(userDir + '/Default/Preferences', 'Crashed', 'none') # needs to be open once
@@ -87,7 +113,7 @@ class SeleniumScraper(object):
         #self.options.user_data_dir = "Default4"
         #vdisplay = Xvfb(width=1920, height=1080, visible=0)
         #Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.6 Safari/537.11
-    
+
     #fixme
     def closeBrowser(self):
         if hasattr(self, 'browser') is True:
@@ -478,13 +504,15 @@ class SeleniumScraper(object):
                         self.checkSwitchTab()
 
     def checkBrowser(self):
-        url = "https://d3ward.github.io/toolz/adblock"
+        url = "https://cine.to"
         self.open_Chrome(url,10 )
         self.browser.save_screenshot(time.strftime("%Y-%m-%d_%H-%M.%S", time.localtime()) + ".png")
         return True
     def checkCine(self,movieName, imdb, quali=[[0,0],[0,0]],isTestCase=False): # getLinks for no douple code 
         modul = "Cine"
-        self.open_Chrome("https://cine.to" )
+        self.open_Chrome("chrome://version" ,10)
+        self.browser.save_screenshot("checjkCine1"+time.strftime("%Y-%m-%d_%H-%M.%S", time.localtime()) + ".png")
+
         lang =  self.browser.find_elements(By.XPATH,"/html/body/div[3]/div[2]/nav[1]/div/ul/li/a")
         if len(lang) > 0 and lang[0].text != "Deutsch":
             self.browser.save_screenshot("a.png")
@@ -577,7 +605,7 @@ if __name__ == "__main__":
     #fetcher.checkSTo("Breaking bad", imdb="tt0903747",  season="04",episode="04")#g
     #installUblock
     hi = fetcher.checkCine("1UP", imdb="tt13487922",isTestCase=True)#g
-    hi = fetcher.checkCine("1UP", imdb="tt13487922",isTestCase=True)#g
+   # hi = fetcher.checkBrowser()
     print(hi)
     fetcher.closeBrowser()
    # fetcher.installUblock()

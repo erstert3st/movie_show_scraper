@@ -20,7 +20,6 @@ develop-eggs/
 dist/
 reqproxy.py
 test.py
-*.zip
 downloads/
 proxy.txt
 eggs/
@@ -60,7 +59,7 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
-
+*.png
 # Translations
 *.mo
 *.pot

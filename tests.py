@@ -13,6 +13,7 @@ def test_checkBrowser():
     print("hi")
     assert SeleniumScraper("db").checkBrowser() == True
     print(" ")
+
 def ping(name="",ip="", port=""):
     try:
         # Try to open a socket connection to the specified host and port
@@ -26,7 +27,7 @@ def ping(name="",ip="", port=""):
     status = status == "online"
     return status
 
-def checkCine():
+def test_checkCine():
     print("hi")
     assert len(SeleniumScraper("db").checkCine("1UP", imdb="tt13487922",isTestCase= True)) >= 1
     print(" ")

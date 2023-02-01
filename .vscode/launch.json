@@ -1,3 +1,14 @@
+//        {
+ /*   "name": "Python: Aktuelle Datei",
+    "type": "python",
+    "request": "launch",
+    "program": "${file}",
+    "console": "integratedTerminal",
+    "justMyCode": true
+}
+
+*/
+
 {
     // Verwendet IntelliSense zum Ermitteln möglicher Attribute.
     // Zeigen Sie auf vorhandene Attribute, um die zugehörigen Beschreibungen anzuzeigen.
@@ -5,12 +16,21 @@
     "version": "0.2.0",
     "configurations": [
         
+        
         {
-            "name": "Python: Aktuelle Datei",
+            "name": "Python: Remote-Attach",
             "type": "python",
-            "request": "launch",
-            "program": "/home/user/Schreibtisch/SCRPPER/seleniumTest/main.py",
-            "console": "integratedTerminal",
+            "request": "attach",
+            "connect": {
+                "host": "localhost",
+                "port": 5678
+            },
+            "pathMappings": [
+                {
+                    "localRoot": "${workspaceFolder}",
+                    "remoteRoot": "/usr/src/app"
+                }
+            ],
             "justMyCode": true
         }
     ]
