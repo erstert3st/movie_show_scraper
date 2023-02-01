@@ -16,3 +16,4 @@ pytest
 mysql-connector-python
 debugpy
 listen
+schedule
