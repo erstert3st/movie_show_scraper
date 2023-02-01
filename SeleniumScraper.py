@@ -31,8 +31,7 @@ class SeleniumScraper(object):
         self.url = ""
         self.db = Database()
         #self.browser = uc.Chrome()
-        self.hoster = hoster 
-        if len(hoster) < 1 :self.hoster = self.db.getHoster()
+        self.hoster = hoster if len(hoster) > 1 else self.db.getHoster()
         self.ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.6 Safari/537.11"
         self.found = {"720p": False, "1080p": False, "altLink": False}#my_dict.update({"b":True})
         if len(ua) > 1:
@@ -57,6 +56,14 @@ class SeleniumScraper(object):
         self.getWaitUrl(self.url,5)  # add lang
         time.sleep(timer)
         return True 
+    
+    def checkBrowser(self):
+        url = "https://cine.to"
+        self.open_Chrome(url,10 )
+        self.browser.save_screenshot(time.strftime("%Y-%m-%d_%H-%M.%S", time.localtime()) + ".png")
+        return True
+
+
     def activateRemoteDebugging(self):
     # 5678 is the default attach port in the VS Code debug configurations. Unless a host and port are specified, host defaults to 127.0.0.1
         #
@@ -94,6 +101,7 @@ class SeleniumScraper(object):
         #options.user_data_dir = "/home/user/.config/google-chrome"
         #options.user_data_dir = userDir
         #options.add_argument("user-data-dir='/home/user/.config/google-chrome'")
+        options.add_argument('--remote-debugging-port=9000')
         options.add_argument("--profile-directory=Default")
        # options.add_argument("--profile-directory=test_clean")
         options.add_argument("--lang=de")
@@ -147,6 +155,50 @@ class SeleniumScraper(object):
         elif self.found.get['1080p']:
             return self.hoster[:3] #check  and may thing about something that alt link is secure 
 
+    
+                    
+                
+    def checkTable(self, checkName,table,episode,episodeName=""):
+        for row in table:
+            cols = row.find_elements(By.TAG_NAME,"td")
+            if cols[0].text == episode and ( checkName or cols[1].text == episodeName):
+               #update serie in db 
+               return  cols[0].find_element(By.TAG_NAME,"a").get_attribute('href') 
+            else:
+                continue
+          
+
+    def findAndSolveCaptcha(self, iframe):
+
+        time.sleep(random.randint(5, 15))
+        # return "restart"
+        ErrorInfo = False
+        self.browser.switch_to.frame(iframe)
+        #self.browser.save_screenshot("pics/" + str(y) + ".png")
+        print("switching to the recaptcha iframe")
+        # clicking to request the audio challange
+        self.browser.find_element(By.XPATH, '//*[@id="recaptcha-audio-button"]').click()
+        while ErrorInfo is False:
+
+            time.sleep(3)
+            audio_url = self.browser.find_elements(By.CLASS_NAME, "rc-audiochallenge-tdownload-link")[0].get_attribute('href')
+            time.sleep(1) 
+            if len(audio_url) < 1: raise captchaLock
+            # verifying the answer
+            solution = captcha().captchaSolver(audio_url)
+            time.sleep(random.randint(5, 9))
+            # answer_input
+            self.browser.find_element(By.ID, 'audio-response').send_keys(solution)
+            time.sleep(2)
+            # submit_button
+            self.browser.find_element(By.XPATH, '//*[@id="recaptcha-verify-button"]').click()
+            time.sleep(10)
+            errorElement = ""
+            errorElement = self.browser.find_elements(By.CSS_SELECTOR,"#rc-audio > div.rc-audiochallenge-error-message")
+            if len(errorElement) < 1 and errorElement[0].text != "Es sind mehrere richtige Lösungen erforderlich. Bitte weitere Aufgaben lösen.":
+                ErrorInfo = True
+        time.sleep(15)
+
     def beep(self):
         duration = 1 # seconds
         freq = 100  # Hz
@@ -182,8 +234,63 @@ class SeleniumScraper(object):
             self.get_link(self.url)
             return
 
+    def checkUrl(self,link,id,movieOrSerie,modul,curremtBestQuali=["1000","0"],curremtAltQuali=["0","0"]):
+            filemanager = FileManager()
+            reqCode = requests.head(link).status_code
+            if reqCode == 200: 
+                quality = filemanager.checkVideoSize(link)
+                print("found link: " + link)
+                quality = "bug"
+                intNum = int(quality[0]) 
+            
+                if intNum > int(curremtBestQuali[0]):
+                    temp= ""
+                elif intNum > int(curremtAltQuali[0]):
+                    temp= "temp_"
+                else:
+                    return "betterFound"
+                
+                status= modul +"_done" 
+                table="movierequest" if "movie" in movieOrSerie else "episoderequest" 
+                sql = "UPDATE `"+table+"` SET `"+temp+"link` = '"+link+"', `"+temp+"link_quali`= '"+quality+"', \
+                `status` = '"+status+"'  WHERE `id` = "  + id
+                self.db.update(sql = sql)
 
-    
+            self.db.insertLog(modul,text="checkUrl: " + link, lvl="2" ,info="reqCode")
+
+    def captchaCheck(self,selectorType,selector):
+        captchaSearch = []
+        for x in range(1, 2):     
+            captchaSearch =  self.browser.find_elements(selectorType,selector)
+            if len(captchaSearch) > 0: 
+                self.findAndSolveCaptcha(captchaSearch[0])
+                break
+            #   catch b  captchaLock! 
+    def searchrightLinkKiste(self, querry, imdb, isMovie="/movie/"):   
+        self.searchAndClick(search= "s",button= "search-button",selector=By.ID  ,querry=imdb)
+        last_Element_Found= True
+        links = []
+        counter =1
+        #add imf no imdb found
+        for x in range(1, 2):           
+            links = self.getAllKisteLinks(isMovie,x)
+            for link in links:
+                self.getWaitUrl(link,5)
+                print("serac")
+                if(imdb == False):
+                    webTitle = re.sub(r'[^\w\s]', '', self.browser.find_element(By.CSS_SELECTOR, "#content > div > div.single-content.movie > div.info-right > div.title > h1").text.lower().replace(" ", ""))
+                    origTitle = re.sub(r'[^\w\s]', '', querry.lower().replace(" ", ""))
+                    if (origTitle in webTitle): imdb = True
+                if imdb not in self.browser.find_element(By.CSS_SELECTOR, "#content > div > div.single-content.movie > div.rating > div.vote > div > div.site-vote > span > a").get_attribute('href') and imdb is not True:
+                    print("not found")
+                    self.getWaitUrl(self.url,5)    
+                    timer = random(1000,4000) 
+                    (self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight); setTimeout(print('hi'), "+ timer +")" ) for _ in range(5))
+                    break
+                else:
+                    return True
+        return False
+
     def getAllKisteLinks(self,isMovie, isSecond):
         links = []
         counter = 1
@@ -201,17 +308,6 @@ class SeleniumScraper(object):
         if(len(links) < 1): raise streamKisteSearchError
         
         return links
-
-   # def try_Kiste_Links(self,links,imdb):
-
-    #    for link in links:
-         #   self.browser.get(link)
-       #     time.sleep(5)
-       #     print("serac")
-        #    if imdb in self.browser.find_element(By.CSS_SELECTOR, "#content > div > div.single-content.movie > div.rating > div.vote > div > div.site-vote > span > a").get_attribute('href'):
-         #       return True
-         #       print("found")
-      #  return False
 
     def searchAndClick(self,search,selector, querry,button=""):
         # find the search box element and enter a search term
@@ -330,41 +426,7 @@ class SeleniumScraper(object):
     # listElement = soup.select("#content > div > div > div.fix-film_item.fix_category.clearfix.list_items > div:nth-child("+str(counter)+") > div > div.movie-poster > aa")
     #if link == None:counter = 0
        
-    def searchrightLinkKiste(self, querry, imdb, isMovie="/movie/"):   
-        self.searchAndClick(search= "s",button= "search-button",selector=By.ID  ,querry=imdb)
-        last_Element_Found= True
-        links = []
-        counter =1
-        #add imf no imdb found
-        for x in range(1, 2):           
-            links = self.getAllKisteLinks(isMovie,x)
-            for link in links:
-                self.getWaitUrl(link,5)
-                print("serac")
-                if(imdb == False):
-                    webTitle = re.sub(r'[^\w\s]', '', self.browser.find_element(By.CSS_SELECTOR, "#content > div > div.single-content.movie > div.info-right > div.title > h1").text.lower().replace(" ", ""))
-                    origTitle = re.sub(r'[^\w\s]', '', querry.lower().replace(" ", ""))
-                    if (origTitle in webTitle): imdb = True
-                if imdb not in self.browser.find_element(By.CSS_SELECTOR, "#content > div > div.single-content.movie > div.rating > div.vote > div > div.site-vote > span > a").get_attribute('href') and imdb is not True:
-                    print("not found")
-                    self.getWaitUrl(self.url,5)    
-                    timer = random(1000,4000) 
-                    (self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight); setTimeout(print('hi'), "+ timer +")" ) for _ in range(5))
-                    break
-                else:
-                    return True
-        return False
-                    
-                
-    def checkTable(self, checkName,table,episode,episodeName=""):
-        for row in table:
-            cols = row.find_elements(By.TAG_NAME,"td")
-            if cols[0].text == episode and ( checkName or cols[1].text == episodeName):
-               #update serie in db 
-               return  cols[0].find_element(By.TAG_NAME,"a").get_attribute('href') 
-            else:
-                continue
-                
+      
     
     def check_Bs(self,querry,   season="", episode="",episodeName="",link=""):
         linkFound = False
@@ -422,47 +484,6 @@ class SeleniumScraper(object):
                         
         raise #bs serie not found 
       
-    def findAndSolveCaptcha(self, iframe):
-
-        time.sleep(random.randint(5, 15))
-        # return "restart"
-        ErrorInfo = False
-        self.browser.switch_to.frame(iframe)
-        #self.browser.save_screenshot("pics/" + str(y) + ".png")
-        print("switching to the recaptcha iframe")
-        # clicking to request the audio challange
-        self.browser.find_element(By.XPATH, '//*[@id="recaptcha-audio-button"]').click()
-        while ErrorInfo is False:
-
-            time.sleep(3)
-            audio_url = self.browser.find_elements(By.CLASS_NAME, "rc-audiochallenge-tdownload-link")[0].get_attribute('href')
-            time.sleep(1) 
-            if len(audio_url) < 1: raise captchaLock
-            # verifying the answer
-            solution = captcha().captchaSolver(audio_url)
-            time.sleep(random.randint(5, 9))
-            # answer_input
-            self.browser.find_element(By.ID, 'audio-response').send_keys(solution)
-            time.sleep(2)
-            # submit_button
-            self.browser.find_element(By.XPATH, '//*[@id="recaptcha-verify-button"]').click()
-            time.sleep(10)
-            errorElement = ""
-            errorElement = self.browser.find_elements(By.CSS_SELECTOR,"#rc-audio > div.rc-audiochallenge-error-message")
-            if len(errorElement) < 1 and errorElement[0].text != "Es sind mehrere richtige Lösungen erforderlich. Bitte weitere Aufgaben lösen.":
-                ErrorInfo = True
-        time.sleep(15)
-
-
-    def captchaCheck(self,selectorType,selector):
-        captchaSearch = []
-        for x in range(1, 2):     
-            captchaSearch =  self.browser.find_elements(selectorType,selector)
-            if len(captchaSearch) > 0: 
-                self.findAndSolveCaptcha(captchaSearch[0])
-                break
-            #   catch b  captchaLock! 
-
     def checkSTo(self,serieName, imdb, season="04",episode="04"):
         self.open_Chrome("https://s.to/serien" )
         self.searchAndClick(search= "serInput", selector=By.ID, querry=serieName.lower())
@@ -502,17 +523,11 @@ class SeleniumScraper(object):
                     else:                           
                         self.browser.close()
                         self.checkSwitchTab()
-
-    def checkBrowser(self):
-        url = "https://cine.to"
-        self.open_Chrome(url,10 )
-        self.browser.save_screenshot(time.strftime("%Y-%m-%d_%H-%M.%S", time.localtime()) + ".png")
-        return True
+   
     def checkCine(self,movieName, imdb, quali=[[0,0],[0,0]],isTestCase=False): # getLinks for no douple code 
-        modul = "Cine"
+        modul,  = "Cine"
         self.open_Chrome("chrome://version" ,10)
         self.browser.save_screenshot("checjkCine1"+time.strftime("%Y-%m-%d_%H-%M.%S", time.localtime()) + ".png")
-
         lang =  self.browser.find_elements(By.XPATH,"/html/body/div[3]/div[2]/nav[1]/div/ul/li/a")
         if len(lang) > 0 and lang[0].text != "Deutsch":
             self.browser.save_screenshot("a.png")
@@ -557,42 +572,8 @@ class SeleniumScraper(object):
             self.checkUrl(link,modul,quali[0],quali[1])
         return True
 
-    def checkUrl(self,link,id,movieOrSerie,modul,curremtBestQuali=["1000","0"],curremtAltQuali=["0","0"]):
-        filemanager = FileManager()
-        reqCode = requests.head(link).status_code
-        if reqCode == 200: 
-            quality = filemanager.checkVideoSize(link)
-            print("found link: " + link)
-            quality = "bug"
-            intNum = int(quality[0]) 
-           
-            if intNum > int(curremtBestQuali[0]):
-                temp= ""
-            elif intNum > int(curremtAltQuali[0]):
-               temp= "temp_"
-            else:
-                return "betterFound"
-            
-            status= modul +" done" 
-            table="movierequest" if "movie" in movieOrSerie else "episoderequest" 
-            sql = "UPDATE `"+table+"` SET `"+temp+"link` = '"+link+"', `"+temp+"link_quali`= '"+quality+"', \
-            `status` = '"+status+"'  WHERE `id` = "  + id
-            self.db.update(sql = sql)
+    
 
-        self.db.insertLog(modul,text="checkUrl: " + link, lvl="2" ,info="reqCode")
-
-    def findStreams(self, objekt):
-        links = []
-        isMovie= "/serie/"
-        if(objekt[1] == 1): # if objekt is movie or not 
-            isMovie= "/movie/"
-           # self.checkCine(movieName=objekt[4],imdb=objekt[8])
-            link = self.checkCine(movieName=objekt[4],imdb=objekt[8])
-        else:
-         #   self.check_Bs()
-            #self.check_STo()
-            print("hi")
-        link = self.check_Streamkiste(objekt[4], imdb=objekt[8], isMovie=isMovie, season=objekt[5],episode=objekt[6])
 
 if __name__ == "__main__":
    # db =  Database()

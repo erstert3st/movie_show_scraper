@@ -19,7 +19,7 @@ ENV DISPLAY=:99
 RUN pip install --upgrade pip
 
 # install selenium
-#RUN pip install -r requirements.txt
+RUN pip install -r requirements.txt
 ENV APP_HOME /usr/src/app
 ENV CHROME_USR_DIR="/root/.config/google-chrome/"
 WORKDIR /$APP_HOME
@@ -37,6 +37,7 @@ RUN pip cache purge
 EXPOSE 80
 EXPOSE 5678
 EXPOSE 5000
+EXPOSE 9000
 RUN chmod +x run.sh
 RUN chmod +x rundebug.sh
 
