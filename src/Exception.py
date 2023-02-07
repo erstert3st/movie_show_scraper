@@ -16,3 +16,6 @@ class captchaLock(Exception):
 class searchError(Exception):
     def __str__(self):
         return "bot is found"
+class notAvailableError(Exception):
+    def __str__(self):
+        return "bot is found"

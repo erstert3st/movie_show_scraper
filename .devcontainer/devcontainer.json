@@ -10,7 +10,8 @@
 	},
 
 	"mounts": [
-		"source=${localEnv:HOME}/Schreibtisch/SCRPPER/seleniumTest,target=/usr/src/app,type=bind,consistency=cached"	],
+		"source=${localEnv:HOME}/Schreibtisch/SCRPPER/seleniumTest/src,target=/usr/src/app,type=bind,consistency=cached",	
+		"source=${localEnv:HOME}/Schreibtisch/temp,target=/root/.config/google-chrome,type=bind,consistency=cached"	],
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
 

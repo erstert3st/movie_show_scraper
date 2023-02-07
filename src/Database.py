@@ -76,8 +76,12 @@ class Database(object):
         values = (modul ,text ,lvl,info) 
         self.insert(sql,values)
 
-    
-    #std udate status
+    def uptError(self,id,modul,status,table="EpisodeRequests",error="lastCatch: ",info="Catch last try Catch may look into"):
+        error = error + modul
+        sql = "UPDATE "+table+"SET (Dow_Status, Error, info ) values (%s, %s, %s) WHERE id = "   + id  
+        values = (status ,error ,info) 
+        self.update(sql,values)
+
     def update(self, table="", status="", id="", sql="", error=""):
         try:
             if(len(sql) < 1):

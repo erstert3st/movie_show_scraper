@@ -1,13 +1,4 @@
-CREATE TABLE IF NOT EXISTS Serien (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    link VARCHAR(255),
-    other_links  VARCHAR(255), 
-    watcher BOOLEAN DEFAULT '0' NOT NULL, 
-    status varchar(25) CHECK (status IN ('idc','new','process','done','ERROR', '')),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_changed TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) 
+
 
 CREATE TABLE IF NOT EXISTS Logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -29,78 +20,6 @@ CREATE TABLE IF NOT EXISTS hoster (
     last_changed TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) 
 
-CREATE TABLE IF NOT EXISTS Staffel (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    serien_id INT,
-    nr VARCHAR(255),
-    name VARCHAR(255),
-    link  VARCHAR(510), 
-    watcher BOOLEAN DEFAULT '0' NOT NULL, 
-    status varchar(25) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_changed TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) 
--- status varchar(25) NOT NULL CHECK (status IN ('idc','new','process','ERROR')), change id to int
-CREATE TABLE IF NOT EXISTS Episode (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    season_id VARCHAR(255) NOT NULL,
-    nr VARCHAR(255) NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    pid VARCHAR(255) UNIQUE,
-    check_quali BOOLEAN DEFAULT '0' NOT NULL, 
-    bs_link  VARCHAR(255), 
-    avl_hoster VARCHAR(255), 
-    link VARCHAR(750),
-    link_quali  VARCHAR(255),
-    temp_link  VARCHAR(255),
-    temp_link_quali  VARCHAR(255), 
-    watcher BOOLEAN DEFAULT '0' NOT NULL, 
-    status varchar(25) NOT NULL,
-    error_msg varchar(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_changed TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) 
-
-CREATE TABLE IF NOT EXISTS Movie (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    season_id INT NOT NULL,
-    nr VARCHAR(255) NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    stack_able BOOLEAN DEFAULT '0' NOT NULL, 
-    check_quali BOOLEAN DEFAULT '0' NOT NULL, 
-    link  VARCHAR(255), 
-    link_quali  VARCHAR(255),
-    temp_link VARCHAR(255),  
-    temp_link_quali  VARCHAR(255), 
-
-    watcher BOOLEAN DEFAULT '0' NOT NULL, 
-    status varchar(25) NOT NULL CHECK (status IN ('idc','new','process','ERROR')),
-    error_msg varchar(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_changed TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) 
-CREATE OR REPLACE VIEW Files AS SELECT
-    Serien.id AS serien_id,
-    Staffel.id AS staffel_id,
-    Episode.id AS episode_id,
-    Staffel.name AS serien_name,
-    Staffel.nr AS staffel_nr,
-    Episode.name AS episode_name,
-    Episode.nr AS episode_nr,
-    CONCAT(   REPLACE(Serien.name, ' ', '.'), "-S", Staffel.nr ,"-E", Episode.nr,"-", REPLACE(Episode.name, ' ', '.'),".mp4") AS filename, 
-    Episode.pid,
-    Episode.link,
-    Episode.link_quali,
-    Episode.status
-FROM
-    Episode
-INNER JOIN Staffel ON Episode.season_id = Staffel.id
-INNER JOIN Serien ON Staffel.serien_id = Serien.id
-WHERE Episode.link IS NOT NULL AND Episode.link <> '' AND
- Episode.status != "new" AND Episode.status != "idc" AND Episode.status != "waiting";
-#V2
-select `Ombi`.`EpisodeRequests`.`Id` AS `EpiReqId`,0 AS `isMovie`,`Ombi`.`EpisodeRequests`.`SeasonId` AS `SeasonId`,`Ombi`.`SeasonRequests`.`ChildRequestId` AS `RequestId`,`Ombi`.`TvRequests`.`Title` AS `Serie`,`Ombi`.`SeasonRequests`.`SeasonNumber` AS `SeasonNr`,`Ombi`.`EpisodeRequests`.`EpisodeNumber` AS `EpisodeNumber`,`Ombi`.`TvRequests`.`TvDbId` AS `TvDbId`,`Ombi`.`TvRequests`.`ImdbId` AS `ImdbId`,`Ombi`.`TvRequests`.`Status` AS `Status`,`Ombi`.`EpisodeRequests`.`Title` AS `EpiTitle`,`Ombi`.`ChildRequests`.`Title` AS `Title`,`Ombi`.`ChildRequests`.`Available` AS `Available`,`Ombi`.`ChildRequests`.`MarkedAsAvailable` AS `MarkedAsAvailable`,`Ombi`.`ChildRequests`.`Denied` AS `Denied`,`Ombi`.`ChildRequests`.`DeniedReason` AS `DeniedReason` from (((`Ombi`.`EpisodeRequests` join `Ombi`.`SeasonRequests` on(`Ombi`.`EpisodeRequests`.`SeasonId` = `Ombi`.`SeasonRequests`.`Id`)) join `Ombi`.`ChildRequests` on(`Ombi`.`SeasonRequests`.`ChildRequestId` = `Ombi`.`ChildRequests`.`Id`)) join `Ombi`.`TvRequests` on(`Ombi`.`ChildRequests`.`ParentRequestId` = `Ombi`.`TvRequests`.`Id`)) union select `Ombi`.`MovieRequests`.`Id` AS `ID`,1 AS `TRUE`,NULL AS `NULL`,NULL AS `NULL`,`Ombi`.`MovieRequests`.`Title` AS `Title`,NULL AS `NULL`,NULL AS `NULL`,`Ombi`.`MovieRequests`.`TheMovieDbId` AS `TheMovieDbId`,`Ombi`.`MovieRequests`.`ImdbId` AS `ImdbId`,`Ombi`.`MovieRequests`.`Status` AS `Status`,NULL AS `NULL`,`Ombi`.`MovieRequests`.`Title` AS `Title`,`Ombi`.`MovieRequests`.`Available` AS `Available`,`Ombi`.`MovieRequests`.`MarkedAsAvailable` AS `MarkedAsAvailable`,`Ombi`.`MovieRequests`.`Denied` AS `Denied`,`Ombi`.`MovieRequests`.`DeniedReason` AS `DeniedReason` from `Ombi`.`MovieRequests`
-
 
 
 ALTER TABLE `EpisodeRequests` CHANGE `Title` `Title` LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL; 
@@ -121,6 +40,9 @@ ALTER TABLE `TvRequests` CHANGE `Title` `Title` LONGTEXT CHARACTER SET utf8mb3 C
     `Ombi`.`TvRequests`.`Status` AS `Status`,
     `Ombi`.`EpisodeRequests`.`Title` AS `EpiTitle`,
     `Ombi`.`ChildRequests`.`Title` AS `Title`,
+     CONCAT('/data/tv/',`TvRequests`.`Title`,'/Season ',`SeasonRequests`.`SeasonNumber`,'/') AS `FolderPath`,
+     CONCAT(`TvRequests`.`Title`,'.S',`SeasonRequests`.`SeasonNumber`,'.E',`EpisodeRequests`.`EpisodeNumber`,'.deu.',
+    `EpisodeRequests`.`Title`,'.mp4') AS `FileName`,
     `Ombi`.`ChildRequests`.`Available` AS `Available`,
     `Ombi`.`ChildRequests`.`MarkedAsAvailable` AS `MarkedAsAvailable`,
     `Ombi`.`ChildRequests`.`Denied` AS `Denied`,
@@ -169,6 +91,9 @@ SELECT
     MovieRequests.Status,
     NULL,
     MovieRequests.Title,
+     CONCAT('/movies/',MovieRequests.Title,''),
+     CONCAT(MovieRequests.Title,'.mp4'),
+    MovieRequests.Title,
     MovieRequests.Available,
     MovieRequests.MarkedAsAvailable,
     MovieRequests.Denied,
@@ -211,3 +136,86 @@ ALTER TABLE`Ombi`.`SeasonRequests` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8
 ALTER TABLE`Ombi`.`EpisodeRequests` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 ALTER TABLE`Ombi`.`ChildRequests` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
    CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+
+INSERT INTO `hoster` (`id`, `name`, `priority`, `regex1`, `regex2`, `regex3`, `status`, `created_at`, `last_changed`) VALUES
+(1, 'Vidoza', 1, NULL, NULL, NULL, 'working', '2022-12-13 22:47:38', '2022-12-13 22:47:38'),
+(3, 'Streamtape', 2, NULL, NULL, NULL, 'working', '2022-12-13 22:47:56', '2022-12-13 22:47:56'),
+(4, 'StreamZ', 3, NULL, NULL, NULL, 'working', '2022-12-13 22:48:15', '2022-12-13 22:48:15'),
+(6, 'StreamZZ', 4, NULL, NULL, NULL, 'working', '2022-12-13 22:48:15', '2022-12-13 22:48:15');
+
+v4
+
+CREATE OR REPLACE VIEW WorkToDo AS 
+SELECT
+    EpisodeRequests.Id AS EpiReqId,
+    FALSE AS isMovie,
+    EpisodeRequests.SeasonId AS SeasonId,
+    SeasonRequests.ChildRequestId AS RequestId,
+    TvRequests.Title AS Serie,
+    LPAD(SeasonRequests.SeasonNumber, 2, '0') AS SeasonNr,
+    LPAD(EpisodeRequests.EpisodeNumber, 2, '0') AS EpisodeNumber,
+    TvRequests.TvDbId AS TvDbId,
+    TvRequests.ImdbId AS ImdbId,
+    TvRequests.Status AS Status,
+    EpisodeRequests.Title AS EpiTitle,
+    ChildRequests.Title AS Title,
+    AspNetUsers.UserName AS UserName,
+    CONCAT(IF( AspNetUsers.UserName != 'heinz',  '/tv/','/tv-opa/'), TvRequests.Title, '/Season ',  LPAD(SeasonRequests.SeasonNumber, 2, '0'), '/') AS FolderPath,
+    CONCAT(TvRequests.Title, '.S', LPAD(SeasonRequests.SeasonNumber, 2, '0'), '.E', LPAD(EpisodeRequests.EpisodeNumber, 2, '0'), '.deu.', EpisodeRequests.Title, '.mp4') AS File_Name,
+    ChildRequests.Available AS Available,
+    ChildRequests.MarkedAsAvailable AS MarkedAsAvailable,
+    ChildRequests.Denied AS Denied,
+    ChildRequests.DeniedReason AS DeniedReason,
+    EpisodeRequests.Link_Quali AS '4K',
+    EpisodeRequests.Dow_Status AS Dow_Status,
+    EpisodeRequests.Check_Quali AS Check_Quali,
+    EpisodeRequests.Bs_Link AS Bs_Link,
+    EpisodeRequests.Link AS Link,
+    EpisodeRequests.Link_Quali AS Link_Quali,
+    EpisodeRequests.Alt_Link AS Alt_Link,
+    EpisodeRequests.Alt_Link_Quali AS Alt_Link_Quali,
+    EpisodeRequests.Error AS Error,
+    EpisodeRequests.Info AS Info
+FROM
+    EpisodeRequests
+    JOIN SeasonRequests ON EpisodeRequests.SeasonId = SeasonRequests.Id
+    JOIN ChildRequests ON SeasonRequests.ChildRequestId = ChildRequests.Id
+    JOIN TvRequests ON ChildRequests.ParentRequestId = TvRequests.Id
+    Join AspNetUsers ON ChildRequests.RequestedUserId = AspNetUsers.Id
+UNION
+SELECT
+    MovieRequests.ID,
+    TRUE,
+    NULL,
+    NULL,
+    MovieRequests.Title,
+    NULL,
+    NULL,
+    MovieRequests.TheMovieDbId,
+    MovieRequests.ImdbId,
+    MovieRequests.Status,
+    NULL,
+    MovieRequests.Title,
+    AspNetUsers.UserName,
+    CONCAT(IF( AspNetUsers.UserName != 'heinz',  '/movie/','/movie-opa/'), MovieRequests.Title, '/'),
+    CONCAT(MovieRequests.Title, '.mp4'),
+    MovieRequests.Available,
+    MovieRequests.MarkedAsAvailable,
+    MovieRequests.Denied,
+    MovieRequests.DeniedReason,
+    MovieRequests.Has4KRequest,
+    MovieRequests.Dow_Status,
+    MovieRequests.Check_Quali,
+    MovieRequests.Bs_Link,
+    MovieRequests.Link,
+    MovieRequests.Link_Quali,
+    MovieRequests.Alt_Link,
+    MovieRequests.Alt_Link_Quali,
+    MovieRequests.Error,
+    MovieRequests.Info
+FROM
+    MovieRequests
+JOIN AspNetUsers ON MovieRequests.RequestedUserId = AspNetUsers.Id
+WHERE
+    MovieRequests.Denied != 1;
+ CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;

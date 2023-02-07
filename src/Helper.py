@@ -19,7 +19,7 @@ class FileManager(object):
         try:
             # use widh beause Movies are different
             metaData = ffmpeg.probe(videoLink)
-            width =","+ str(metaData["streams"][0]['width'])
+            width =","+ str(metaData["streams"][0]['width'])+"," + str(metaData["streams"][0]['height'])
             #height = str(metaData["streams"][0]['height'])
             size = int(metaData["format"]['size'])            
         except:
@@ -55,11 +55,7 @@ class FileManager(object):
 
 
 
-#if __name__ == "__main__":#
-   # hi = FileManager()
-    # hi.test()
-# hi.sendFiles("test",["https://uptobox.com/link1", "https://pixeldrain.com/u/link2"])
-   # hi.checkVideoSize()
+
 import myjdapi
 
 
@@ -70,7 +66,7 @@ class Api(object):
     def __init__(self):
         jd=myjdapi.Myjdapi()
         jd.set_app_key("pi")
-        jd.connect("ahhdqdkanquasndfdc@tmmwj.net","123456789Kk")
+        print(jd.connect("ahhdqdkanquasndfdc@tmmwj.net","123456789Kk"))
         jd.update_devices()
     # Now you are ready to do actions with devices. To use a device you get it like this:
         self.device=jd.get_device("raspberrypi")
@@ -78,7 +74,17 @@ class Api(object):
         self.session.close()
 
     def addLinkToJD(self,Link,name,filename,path):
-        response =self.device.linkgrabber.add_links([{"autostart" : False, "links" : Link+"#name="+filename ,"packageName" : name,  "destinationFolder" : "<jd:packagename>/"+path }])
+        response =self.device.linkgrabber.add_links(params=[{"autostart" : False, "links" : Link+"#name="+filename ,"packageName" : name,  "destinationFolder" : "<jd:packagename>/"+path }])
         #updatepid or pid 
         #hi =device.linkgrabber.add_links([{"autostart" : False, "links" : "https://c78loe9vzoi8ogrbkaxo.fscnd.net/5k7xofps5euvjuw5lwrinwkqsnneoyqfg4vjqdyprwp2gywwsjceyqzyxhwq/b8bd760384b7c062a753daa5dd02989e.mp4#name=filename.mp4 ","packageName" : "ranomserie",  "destinationFolder" : "<jd:packagename>/test" }])
         print(response)
+        return response
+if __name__ == "__main__":#
+   # hi = Api()
+   # hi.test()
+  #  hi.addLinkToJD("https://streamtape.com/v/qyak4791QrUzVWL/Naked.Singularity.2021.720p.WEBRip.800MB.x264-GalaxyRG.mkv","name","test.mp4","folder")
+   # hi.checkVideoSize()
+    hi = FileManager()
+    lol = hi.checkVideoSize("https://908373256.tapecontent.net/radosgw/mepO2wR7XqCb4ok/Ht_7RS5NuxdTyOTGi6SyRkmNOk9_OIHsZicPixd6n-8OwDRibfOMgKvd-_2ejkuu1vHlINcol5WtyRXFXHv7G9dUtlUYgw3oQQI-sTRce28iS8iS9Ka6I1xD2LtV8oDmgVknRAf6RmC126TTtGvKlnVl29bt2LXkPSRyNYFK6ZVYm_EbeAox_Ichfj_610hp2rmwZ6vezmgjI2861HhMcVtKW_5OD3U1v6KkCdC0AzpVtcyIMWkp9K4MNCgeXSq1rVjjlU2wAA_a-QX1Ndk4GvFxtHXbwDU6BMRpqUiu4lDpyNYJgrERrNQWENw/1UP.2022.German.720p.BluRay.x264-WDC.mkv.mp4?stream=1")
+    print(lol)
+   #

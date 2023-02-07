@@ -1,5 +1,5 @@
 import undetected_chromedriver.v2 as uc
-from selenium import webdriver
+from selenium import webdriver 
 from selenium.webdriver.support.select import Select
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
@@ -19,6 +19,8 @@ from selenium.webdriver.common.keys import Keys
 import fileinput
 from xvfbwrapper import Xvfb
 import debugpy
+import command
+#import Action chains
 '''from selenium.webdriver.support.select import Select
 ua = UserAgent()
 userAgent = ua.random
@@ -26,14 +28,15 @@ print(userAgent)
 '''
 class SeleniumScraper(object):
 
-    def __init__(self,ua="", anwesend=False,hoster=[]):
-        environ['LANGUAGE'] = 'deu'
+    def __init__(self,ua="", anwesend=False,hoster=[],db=""):
+        environ['LANGUAGE'] = 'en_US'
         self.url = ""
-        self.db = Database()
+        self.db = db if db == "" else Database() 
         #self.browser = uc.Chrome()
         self.hoster = hoster if len(hoster) > 1 else self.db.getHoster()
         self.ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.6 Safari/537.11"
         self.found = {"720p": False, "1080p": False, "altLink": False}#my_dict.update({"b":True})
+        self.xy=[1920,1080]
         if len(ua) > 1:
             self.ua = ua
         
@@ -49,20 +52,49 @@ class SeleniumScraper(object):
         time.sleep(3)
         
         if True: self.activateRemoteDebugging()
-        
+        try: command.run(['pkill', 'chrome']) 
+        except:print("no chrome open")
         self.browser = uc.Chrome(user_data_dir=self.user_data_dir,options=self.options)
+      #  self.browser = uc.Chrome(options=self.options)
         self.url = link
-        time.sleep(3)
-        self.getWaitUrl(self.url,5)  # add lang
+        time.sleep(1)
+        self.getWaitUrl(self.url,3)  # add lang
         time.sleep(timer)
         return True 
     
     def checkBrowser(self):
         url = "https://cine.to"
-        self.open_Chrome(url,10 )
+       # url = "chrome://version"
+        self.open_Chrome(url,3 )
         self.browser.save_screenshot(time.strftime("%Y-%m-%d_%H-%M.%S", time.localtime()) + ".png")
         return True
-
+    
+    def findNestedVideo(self):
+        try:
+            # locate an element within the current frame
+            videoSrc = self.browser.find_element(By.TAG_NAME, "video")
+            # element found, return True
+            return True
+        except:
+            # element not found, switch to the next frame
+            pass
+        # foreachiframe
+        frames = len(self.browser.find_elements_by_tag_name("iframe"))
+        for iframe in range(frames):
+            try:
+                # switch to the current iframe
+                self.browser.switch_to.frame(iframe)
+                # call the function recursively
+                if self.findNestedVideo():
+                    return True
+            except:
+                # switch back to the parent frame
+                self.browser.switch_to.parent_frame()
+                # continue with the next iteration of the loop
+                continue
+        # switch back to the parent frame
+        self.browser.switch_to.parent_frame()
+        return False
 
     def activateRemoteDebugging(self):
     # 5678 is the default attach port in the VS Code debug configurations. Unless a host and port are specified, host defaults to 127.0.0.1
@@ -81,32 +113,40 @@ class SeleniumScraper(object):
         except:
             print("error by bypass restore notif")
 
-    def getChromeData(self,userDir="",skipRemoveError=False):
+    def getChromeData(self,userDir="",skipRemoveError=True):
         self.url, self.Browser, self.title = "","",""
         if os.getenv("CHROME_USR_DIR") is not None:
-             vdisplay = Xvfb(width=1920, height=1080, colordepth=16)
+             vdisplay = Xvfb(width= self.xy[0], height= self.xy[1], colordepth=16)
            #  vdisplay = Xvfb(width=1500, height=730, colordepth=16)
              vdisplay.start()
             #self.disp = Display(backend="xvnc",size=(100, 60),color_depth=24 ,rfbport=2020)
            # self.disp.start()
             # display is active
            
-            # display is stopped
+            # display is stopped--headless=new 
         options = uc.ChromeOptions()
 
-        options.add_argument('--headless')
-        options.add_argument('--disable-gpu')
-        options.add_argument("--no-sandbox")
+
+        #options.add_argument('--disable-gpu')
+       # options.add_argument("--no-sandbox")
        # self.options.add_argument("-user-agent='"+self.ua+"'")
-        #options.user_data_dir = "/home/user/.config/google-chrome"
+      #  options.user_data_dir = "/home/user/.config/google-chrome"
         #options.user_data_dir = userDir
         #options.add_argument("user-data-dir='/home/user/.config/google-chrome'")
-        options.add_argument('--remote-debugging-port=9000')
+       # options.add_argument('--remote-debugging-port=9000')
+        #options.add_argument("--headless")
+        #ptions.headless = True
+      #  options.add_argument("--headless=chrome")
+        options.add_argument("--load-extension=/"+os.getenv("UBLOCK_DIR","home/user/Schreibtisch/SCRPPER/seleniumTest/uBlock0.chromium"))
+       # options.add_argument("--enable-logging= --v=1 > log.txt 2>&1")
+        #options.add_argument("--enable-logging=stderr --v=1")
         options.add_argument("--profile-directory=Default")
+        options.debugger_address = "localhost:9222"
+
        # options.add_argument("--profile-directory=test_clean")
-        options.add_argument("--lang=de")
+        options.add_argument("--lang=en")
         #options.add_experimental_option('prefs', {'intl.accept_languages':  "de,DE"})
-        options.add_argument("--window-size=1920,1080")
+        options.add_argument("--window-size="+str(self.xy[0])+","+str(self.xy[1]))
         #options.add_extension('/home/user/Schreibtisch/SCRPPER/seleniumTest/configs/ublock.crx')
         #options.add_argument("--disable-session-crashed-bubble")
        # options.add_argument("--load-extension='/home/user/Dokumente/seleniumTest/configs/ublo/extension_1_46_0_1.crx'")
@@ -195,9 +235,9 @@ class SeleniumScraper(object):
             time.sleep(10)
             errorElement = ""
             errorElement = self.browser.find_elements(By.CSS_SELECTOR,"#rc-audio > div.rc-audiochallenge-error-message")
-            if len(errorElement) < 1 and errorElement[0].text != "Es sind mehrere richtige Lösungen erforderlich. Bitte weitere Aufgaben lösen.":
+            if len(errorElement) > 0 and errorElement[0].text != "Es sind mehrere richtige Lösungen erforderlich. Bitte weitere Aufgaben lösen.":
                 ErrorInfo = True
-        time.sleep(15)
+        time.sleep(7)
 
     def beep(self):
         duration = 1 # seconds
@@ -233,30 +273,49 @@ class SeleniumScraper(object):
             self.setChromeData()
             self.get_link(self.url)
             return
-
-    def checkUrl(self,link,id,movieOrSerie,modul,curremtBestQuali=["1000","0"],curremtAltQuali=["0","0"]):
+    #TodoInerUrl
+    def checkUrl(self,link,id,movieOrSerie,modul,curremtBestQuali=["1000","0"],curremtAltQuali=["0","0"],innerUrl=False):
             filemanager = FileManager()
             reqCode = requests.head(link).status_code
-            if reqCode == 200: 
-                quality = filemanager.checkVideoSize(link)
-                print("found link: " + link)
-                quality = "bug"
-                intNum = int(quality[0]) 
-            
-                if intNum > int(curremtBestQuali[0]):
-                    temp= ""
-                elif intNum > int(curremtAltQuali[0]):
-                    temp= "temp_"
-                else:
-                    return "betterFound"
-                
-                status= modul +"_done" 
-                table="movierequest" if "movie" in movieOrSerie else "episoderequest" 
-                sql = "UPDATE `"+table+"` SET `"+temp+"link` = '"+link+"', `"+temp+"link_quali`= '"+quality+"', \
-                `status` = '"+status+"'  WHERE `id` = "  + id
-                self.db.update(sql = sql)
+           # if reqCode == 200: 
+            quality = []
+            quality.append(0)
+            innerUrl: quality = filemanager.checkVideoSize(link)
+            print("found link: " + link)
+            intNum = int(quality[0])
 
+            if intNum > int(curremtBestQuali[0]):
+                temp= ""
+            elif intNum > int(curremtAltQuali[0]):
+                temp= "temp_"
+            else:
+                return "betterFound"
+            
+            status= modul +"_done" 
+            table="movierequest" if "movie" in movieOrSerie else "episoderequest" 
+            sql = "UPDATE `"+table+"` SET `"+temp+"link` = '"+link+"', `"+temp+"link_quali`= '"+quality+"', \
+            `Dow_Status` = '"+status+"'  WHERE `id` = "  + id
+            self.db.update(sql = sql)
             self.db.insertLog(modul,text="checkUrl: " + link, lvl="2" ,info="reqCode")
+
+
+      #  command ="function click(x, y) {const ev = new MouseEvent('click', {bubbles: true,cancelable: true,clientX: x,clientY: y}); document.elementFromPoint(x, y).dispatchEvent(ev); } click("+str(x)+", "+str(y)+");"
+  #     # name = self.browser.get_window_size() 
+  # self.browser.execute_script(command) round(name['width'] / 2)
+ #   hi = actions1.move_by_offset( round(name['width'] / 2), round(name['height'] / 2))
+#
+
+    def clickMiddle(self,howOft=1,display=[],x=-1,y=-1):
+        if x < 0 or y < 0:
+            x=round(display['width'] / 2)
+            y=round(display['height'] / 2)
+        action = ActionChains(self.browser)
+        if len(display) < 2: display = self.browser.get_window_size() 
+        mouse =  action.move_by_offset(x,y)
+        for y in range(0,howOft):
+            mouse.click().perform()
+            print("clickDone")
+            time.sleep(3)
 
     def captchaCheck(self,selectorType,selector):
         captchaSearch = []
@@ -361,14 +420,14 @@ class SeleniumScraper(object):
                 elif hoster[0] == hosterStr :  
                     break
             else:
-                if len(hosterStr) < 0:
+                if len(hosterStr) > 0:
                     updateHoster.append((hosterStr, 99, 'new',comeFrom))
 
         #sorted_elements = sorted(sorted_elements, key=lambda x: [hoster[0] for hoster in self.hoster if hoster[0] == x][0])
 
         if(len(updateHoster) > 0):
             print("update db") 
-            sql = "insert into Hoster(name, priority, status,regex3) values (%s, %s, %s , %s)" 
+            sql = "insert into hoster(name, priority, status,regex3) values (%s, %s, %s , %s)" 
             self.db.insertMany(sql,updateHoster)
        # return sorted_elements
         
@@ -379,7 +438,8 @@ class SeleniumScraper(object):
         print(sorted_elements)
         return sorted_elements
 
-    def check_Streamkiste(self,querry, imdb, isMovie="/movie/", season="", episode=""): # getLinks for no douple code 
+    def check_Streamkiste(self,querry, imdb, isMovie="/movie/", season="", episode="" ,quali=[[0,0],[0,0]],isTestCase=False): # getLinks for no douple code 
+        modul = "skiste"
         if(len(imdb) < 1):
             imdb = querry
         url =  "https://streamkiste.tv"
@@ -403,22 +463,17 @@ class SeleniumScraper(object):
         links = []
         #while len(links) >= 2:
         for hoster in hosterElementList:
+
+            self.clickWait("","", 10,hoster)
+            self.browser.switch_to.frame("iframe")
+            self.captchaCheck(By.CSS_SELECTOR,"body > div > div:nth-child(2) > iframe")
             try:
-                self.clickWait("","", 10,hoster)
-                self.browser.switch_to.frame("iframe")
-                self.captchaCheck(By.CSS_SELECTOR,"body > div > div:nth-child(2) > iframe")
-                self.browser.switch_to.frame(0)
-                self.clickWait(By.CSS_SELECTOR,"body > div.plyr-container", 1)
-                self.clickWait(By.CSS_SELECTOR,"body > div.plyr-container", 1)
-                self.clickWait(By.CSS_SELECTOR,"body > div.plyr-container", 5)
-                link = self.browser.find_element(By.TAG_NAME, "video").get_attribute('src')  
-                if len(link) > 0:
-                    self.browser.switch_to.default_content()
-                    self.checkUrl()
-                    links.append(self.browser.current_url)
+                #xy #Todo
+                x=0
+                y=0
+                self.findVideoSrc(isTestCase,modul,quali,x,y,True)
             except:
                 continue
-            time.sleep(random(80,160))
         #if self.scrollAndClick() is True:
             # if  hoster.find_element(By.CLASS_NAME,"hoster").text in myhosterList:
 
@@ -428,16 +483,15 @@ class SeleniumScraper(object):
        
       
     
-    def check_Bs(self,querry,   season="", episode="",episodeName="",link=""):
+    def check_Bs(self,querry,   season="", episode="",episodeName="",link="", quali=[[0,0],[0,0]],isTestCase=False):
+        modul = "bs"
         linkFound = False
         if(len(link) > 1): 
             linkFound = True  
             resultList = [link]  
         else: 
-            link = "https://bs.to/andere-serien"
-        
-        self.open_Chrome(link) 
-        
+            link = "https://bs.to/andere-serien"       
+        self.open_Chrome(link)     
         if linkFound is False:  
             self.searchAndClick(search= "serInput", selector=By.ID, querry=querry)        
 #seriesContainer
@@ -468,23 +522,20 @@ class SeleniumScraper(object):
                 self.clickWait("","", 10,hoster)
                 self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
                 self.captchaCheck(By.CSS_SELECTOR,"body > div:nth-child(9) > div:nth-child(2) > iframe")
-                for i in range(5):
-                    self.clickWait(By.CSS_SELECTOR,"#root > section > div.hoster-player", random.randint(2,7))
-                    iframe = self.browser.find_elements(By.CSS_SELECTOR,"#root > section > div.hoster-player > iframe")
-                    if len(iframe) >= 1 and i >= 2:
-                        self.browser.switch_to.frame(iframe[0])
-                        time.sleep(1)
-                        link = self.browser.find_element(By.TAG_NAME, "video").get_attribute('src')  
-                        self.browser.switch_to.default_content()
-                        self.getWaitUrl(link,10)
-                        if requests.head(self.browser.current_url).status_code == 302: 
-                            continue
-                        else:                           
-                            return self.browser.current_url
+                #add iframe handler
+                #xy #Todo
+                x=0
+                y=0
+                try:
+                    self.findVideoSrc(isTestCase,modul,quali,x,y,True)
+                except:
+                    if "https://bs.to" not in self.browser.current_url: self.checkSwitchTab() 
+                    continue
                         
         raise #bs serie not found 
       
-    def checkSTo(self,serieName, imdb, season="04",episode="04"):
+    def checkSTo(self,serieName, imdb, season="04",episode="04",quali=[[0,0],[0,0]],isTestCase=False):
+        modul = "s.to"
         self.open_Chrome("https://s.to/serien" )
         self.searchAndClick(search= "serInput", selector=By.ID, querry=serieName.lower())
         resultList = self.browser.find_elements(By.CSS_SELECTOR,"#seriesContainer li:not(.hidden) a")
@@ -510,32 +561,28 @@ class SeleniumScraper(object):
                 hosterElementList = self.sortHosterElements(hoster,"S.to")
                 linkList = [element.get_attribute("href") for element in hosterElementList]     
                 for link in  linkList :
-                   # self.getWaitUrl(link, 10)
                     self.getWaitUrl(link,10)
                     if "https://s.to/serie/" in self.browser.current_url: self.checkSwitchTab() 
                     if "https://s.to/redirect/" in self.browser.current_url: self.captchaCheck(By.CSS_SELECTOR,"body > div:nth-child(2) > div:nth-child(2) > iframe")
-
-
-                    #checkcaptcha                  
-                    self.browser.switch_to.default_content()
-                    if requests.head(self.browser.current_url).status_code == 200: 
-                        return self.browser.current_url
-                    else:                           
-                        self.browser.close()
-                        self.checkSwitchTab()
-   
+#                    self.browser.switch_to.default_content()
+                    try:
+                        self.findVideoSrc(isTestCase,modul,quali)
+                    except:
+                        if "https://s.to" not in self.browser.current_url: self.checkSwitchTab() 
+                        continue
     def checkCine(self,movieName, imdb, quali=[[0,0],[0,0]],isTestCase=False): # getLinks for no douple code 
-        modul,  = "Cine"
-        self.open_Chrome("chrome://version" ,10)
+        modul  = "cine"
+        self.open_Chrome("https://cine.to" ,3)
         self.browser.save_screenshot("checjkCine1"+time.strftime("%Y-%m-%d_%H-%M.%S", time.localtime()) + ".png")
-        lang =  self.browser.find_elements(By.XPATH,"/html/body/div[3]/div[2]/nav[1]/div/ul/li/a")
+        lang =  self.browser.find_elements(By.CSS_SELECTOR,"body > div.container-fluid > div.container-fluid.entries > nav.navbar.navbar-static-top.navbar-search > div > ul > li > a")
         if len(lang) > 0 and lang[0].text != "Deutsch":
             self.browser.save_screenshot("a.png")
             self.clickWait(element=lang[0],timer=2)
-            self.clickWait(By.XPATH,"/html/body/div[3]/div[2]/nav[1]/div/ul/li/ul/li[3]",2)
+            self.clickWait(By.CSS_SELECTOR,"body > div.container-fluid > div.container-fluid.entries > nav.navbar.navbar-static-top.navbar-search > div > ul > li > ul > li:nth-child(3) > a",2)
+            #self.clickWait(By.XPATH,"/html/body/div[3]/div[2]/nav[1]/div/ul/li/ul/li[3]",2)
             
-            self.browser.find_element(By.XPATH,"/html/body/div[3]/div[2]/nav[1]/div/ul/li/a")
-        self.searchAndClick(search= "/html/body/div[3]/div[2]/nav[1]/div/input", selector=By.XPATH, querry=movieName)        
+           # self.browser.find_element(By.XPATH,"/html/body/div[3]/div[2]/nav[1]/div/ul/li/a")
+        self.searchAndClick(search= "body > div.container-fluid > div.container-fluid.entries > nav.navbar.navbar-static-top.navbar-search > div > input[type=text]", selector=By.CSS_SELECTOR, querry=movieName)        
         
         print(imdb)
         found = False #make go on next page 
@@ -552,28 +599,33 @@ class SeleniumScraper(object):
                     found = True
                     break
             if found == False: self.clickWait(By.CSS_SELECTOR,"body > div.container-fluid > div.container-fluid.entries > nav:nth-child(3) > center > ul:nth-child(3) > li.next > a > i").click()
-
-
         if found is False: raise searchError
-        hosterElementList = self.browser.find_element(By.CSS_SELECTOR,"#entry > div > div > div.modal-body")
-        hosterElementList= hosterElementList.find_elements(By.TAG_NAME , "li")
-        newHosterElementList = []
-        for hoster in hosterElementList:
-            var = hoster.find_element(By.TAG_NAME, "span")
-            if len(var.text) != 0:
-                newHosterElementList.append(var)
-        hosterElementList = self.sortHosterElements(newHosterElementList,"cine")
-        for hoster in hosterElementList:
-            self.clickWait("","", 10,hoster)
+        hosterElementListwithJunk = self.browser.find_element(By.CSS_SELECTOR,"#entry > div > div > div.modal-body").find_elements(By.TAG_NAME , "li")
+        #remove empty 
+        hosterElementList = [hoster.find_element(By.TAG_NAME, "span") for hoster in hosterElementListwithJunk if len(hoster.find_elements(By.TAG_NAME, "span")[0].text) > 1]        
+        sortedElementList = self.sortHosterElements(hosterElementList,modul)
+        for hoster in sortedElementList:
+            self.clickWait("","", 5,hoster)
             if "cine.to/#t" in self.browser.current_url: self.checkSwitchTab()
             if "cine.to/out/" in self.browser.current_url: self.captchaCheck(By.CSS_SELECTOR,"body > div > div:nth-child(2) > iframe")
-            link = self.browser.current_url
-            if isTestCase : return self.browser.current_url 
-            self.checkUrl(link,modul,quali[0],quali[1])
+            try:
+                self.findVideoSrc(isTestCase,modul,quali)
+            except:# videoBroken:
+                continue
         return True
 
-    
-
+    def findVideoSrc(self,isTestCase,modul,quali,x,y,nestedVideo=False):
+        self.clickMiddle(4)
+        video = self.findNestedVideo() if nestedVideo else self.browser.find_elements(By.TAG_NAME,"video")
+        links = []
+        links.append(self.browser.current_url)
+        if isTestCase : return self.browser.current_url 
+        if len(video) > 0: 
+            links.append(video[0].get_attribute('src'))
+            self.getWaitUrl(links[1])
+            self.checkUrl(links[1],modul,quali[0],quali[1],True)
+        #else: 
+           # self.checkUrl(links[1],modul,quali[0],quali[1],False)           
 
 if __name__ == "__main__":
    # db =  Database()
@@ -585,8 +637,7 @@ if __name__ == "__main__":
    # fetcher.check_Bs("Das Mädchen im Schnee",season="01",episode="01",episodeName="Folge 1")#g
     #fetcher.checkSTo("Breaking bad", imdb="tt0903747",  season="04",episode="04")#g
     #installUblock
-    hi = fetcher.checkCine("1UP", imdb="tt13487922",isTestCase=True)#g
-   # hi = fetcher.checkBrowser()
+    hi = fetcher.checkCine(movieName="1UP", imdb="tt13487922",isTestCase=False)#g
+  #  hi = fetcher.checkBrowser()
     print(hi)
-    fetcher.closeBrowser()
-   # fetcher.installUblock()
+   # fetcher.closeBrowser()
