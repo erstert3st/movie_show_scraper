@@ -1,65 +1,50 @@
-import undetected_chromedriver.v2 as uc
-from selenium import webdriver 
-from selenium.webdriver.support.select import Select
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.action_chains import ActionChains
-import time
-import random
-from pyvirtualdisplay import Display
-import speech_recognition  as sr
-from captcha import captcha
-from  Exception import *
 import os
-import requests
+import random
 import re
+import time
+import requests
+import command
+import undetected_chromedriver.v2 as uc
+
+from selenium.webdriver.common.keys import Keys
+from Exception import *
+from captcha import captcha
 from Database import Database
 from Helper import Api,FileManager
 from os import environ
-from selenium.webdriver.common.keys import Keys
-import fileinput
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.select import Select
 from xvfbwrapper import Xvfb
-import debugpy
-import command
-#import Action chains
-'''from selenium.webdriver.support.select import Select
-ua = UserAgent()
-userAgent = ua.random
-print(userAgent)
-'''
-class SeleniumScraper(object):
 
+class SeleniumScraper(object):
     def __init__(self,ua="", anwesend=False,hoster=[],db=""):
         environ['LANGUAGE'] = 'en_US'
         self.url = ""
-        self.db = db if db == "" else Database() 
-        #self.browser = uc.Chrome()
+        self.db = db if db != "" else Database() 
         self.hoster = hoster if len(hoster) > 1 else self.db.getHoster()
-        self.ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.6 Safari/537.11"
+        self.ua = ua if len(ua) > 0 else "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.6 Safari/537.11"
         self.found = {"720p": False, "1080p": False, "altLink": False}#my_dict.update({"b":True})
         self.xy=[1920,1080]
         if len(ua) > 1:
             self.ua = ua
         
-
     def __del__(self):
       #  self.disp.stop()
         #self.closeBrowser()
         print("done")
     
-    def open_Chrome(self,link,timer=1):
+    def open_Chrome(self,link,timer=1,downloader=False):
         self.user_data_dir=os.getenv("CHROME_USR_DIR","/home/user/.config/google-chrome/")
         self.getChromeData(self.user_data_dir,True)
         time.sleep(3)
-        
         if True: self.activateRemoteDebugging()
         try: command.run(['pkill', 'chrome']) 
         except:print("no chrome open")
         self.browser = uc.Chrome(user_data_dir=self.user_data_dir,options=self.options)
-      #  self.browser = uc.Chrome(options=self.options)
         self.url = link
         time.sleep(1)
         self.getWaitUrl(self.url,3)  # add lang
-        time.sleep(timer)
         return True 
     
     def checkBrowser(self):
@@ -71,7 +56,6 @@ class SeleniumScraper(object):
     
     def findNestedVideo(self):
         try:
-            # locate an element within the current frame
             videoSrc = self.browser.find_element(By.TAG_NAME, "video")
             # element found, return True
             return True
@@ -98,12 +82,10 @@ class SeleniumScraper(object):
 
     def activateRemoteDebugging(self):
     # 5678 is the default attach port in the VS Code debug configurations. Unless a host and port are specified, host defaults to 127.0.0.1
-        #
         #debugpy.listen(5678)
         print("Waiting for debugger attach")
         #debugpy.wait_for_client()
       #  debugpy.breakpoint()
-        print('break on this line')
 
     def remove_RestoreBubble(self,text_file_path, text_to_search, replacement_text):
         try:
@@ -113,7 +95,7 @@ class SeleniumScraper(object):
         except:
             print("error by bypass restore notif")
 
-    def getChromeData(self,userDir="",skipRemoveError=True):
+    def getChromeData(self,userDir="",skipRemoveError=True,downloader=False):
         self.url, self.Browser, self.title = "","",""
         if os.getenv("CHROME_USR_DIR") is not None:
              vdisplay = Xvfb(width= self.xy[0], height= self.xy[1], colordepth=16)
@@ -121,48 +103,47 @@ class SeleniumScraper(object):
              vdisplay.start()
             #self.disp = Display(backend="xvnc",size=(100, 60),color_depth=24 ,rfbport=2020)
            # self.disp.start()
-            # display is active
-           
-            # display is stopped--headless=new 
         options = uc.ChromeOptions()
 
 
-        #options.add_argument('--disable-gpu')
-       # options.add_argument("--no-sandbox")
+        options.add_argument('--disable-gpu')
+        options.add_argument("--no-sandbox")
        # self.options.add_argument("-user-agent='"+self.ua+"'")
       #  options.user_data_dir = "/home/user/.config/google-chrome"
-        #options.user_data_dir = userDir
         #options.add_argument("user-data-dir='/home/user/.config/google-chrome'")
        # options.add_argument('--remote-debugging-port=9000')
-        #options.add_argument("--headless")
         #ptions.headless = True
       #  options.add_argument("--headless=chrome")
+
+        #options.add_argument("detach", True)
+
         options.add_argument("--load-extension=/"+os.getenv("UBLOCK_DIR","home/user/Schreibtisch/SCRPPER/seleniumTest/uBlock0.chromium"))
        # options.add_argument("--enable-logging= --v=1 > log.txt 2>&1")
         #options.add_argument("--enable-logging=stderr --v=1")
-        options.add_argument("--profile-directory=Default")
+        #options.add_argument("--profile-directory=Default")
+        options.add_argument("--profile-directory=Defau1t")
         options.debugger_address = "localhost:9222"
 
        # options.add_argument("--profile-directory=test_clean")
-        options.add_argument("--lang=en")
+      #  options.add_argument("--lang=en")
         #options.add_experimental_option('prefs', {'intl.accept_languages':  "de,DE"})
         options.add_argument("--window-size="+str(self.xy[0])+","+str(self.xy[1]))
-        #options.add_extension('/home/user/Schreibtisch/SCRPPER/seleniumTest/configs/ublock.crx')
         #options.add_argument("--disable-session-crashed-bubble")
-       # options.add_argument("--load-extension='/home/user/Dokumente/seleniumTest/configs/ublo/extension_1_46_0_1.crx'")
+        if downloader is True:
+            options.add_experimental_option("prefs", {"download.default_directory": "/path/to/download/folder",
+                                            "download.prompt_for_download": False,
+                                            "download.directory_upgrade": True,
+                                            "safebrowsing.enabled": True})
+
+
         if skipRemoveError is False:
             self.remove_RestoreBubble(userDir + '/Default/Preferences', 'Crashed', 'none') # needs to be open once
             self.remove_RestoreBubble(userDir + '/Default/Preferences', 'exited_cleanly', 'true')
         self.options = options
         return options
-        #check if ublock is installedoptions.add_argument('load-extension=' + path_to_extension)
-
         #options.add_argument("--profile-directory=Default")
-        #self.options.user_data_dir = "Default4"
         #vdisplay = Xvfb(width=1920, height=1080, visible=0)
-        #Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.6 Safari/537.11
 
-    #fixme
     def closeBrowser(self):
         if hasattr(self, 'browser') is True:
             self.browser.quit()
@@ -194,10 +175,7 @@ class SeleniumScraper(object):
             return self.hoster
         elif self.found.get['1080p']:
             return self.hoster[:3] #check  and may thing about something that alt link is secure 
-
-    
-                    
-                
+       
     def checkTable(self, checkName,table,episode,episodeName=""):
         for row in table:
             cols = row.find_elements(By.TAG_NAME,"td")
@@ -217,7 +195,11 @@ class SeleniumScraper(object):
         #self.browser.save_screenshot("pics/" + str(y) + ".png")
         print("switching to the recaptcha iframe")
         # clicking to request the audio challange
-        self.browser.find_element(By.XPATH, '//*[@id="recaptcha-audio-button"]').click()
+        mayCaptcha = self.browser.find_elements(By.XPATH, '//*[@id="recaptcha-audio-button"]')
+        if len(mayCaptcha) < 1 : 
+            #LOGGGER !!!!! 
+            return False
+        mayCaptcha[0].click()
         while ErrorInfo is False:
 
             time.sleep(3)
@@ -303,7 +285,6 @@ class SeleniumScraper(object):
   #     # name = self.browser.get_window_size() 
   # self.browser.execute_script(command) round(name['width'] / 2)
  #   hi = actions1.move_by_offset( round(name['width'] / 2), round(name['height'] / 2))
-#
 
     def clickMiddle(self,howOft=1,display=[],x=-1,y=-1):
         if x < 0 or y < 0:
@@ -461,7 +442,6 @@ class SeleniumScraper(object):
         hosterElementList = self.browser.find_elements(By.ID,"stream-links")
         hosterElementList = self.sortHosterElements(hosterElementList,"stramkiste")
         links = []
-        #while len(links) >= 2:
         for hoster in hosterElementList:
 
             self.clickWait("","", 10,hoster)
@@ -474,15 +454,6 @@ class SeleniumScraper(object):
                 self.findVideoSrc(isTestCase,modul,quali,x,y,True)
             except:
                 continue
-        #if self.scrollAndClick() is True:
-            # if  hoster.find_element(By.CLASS_NAME,"hoster").text in myhosterList:
-
-    # if  imdb in self.browser.find_element(By.CSS_SELECTOR, "#content > div > div.single-content.movie > div.rating > div.vote > div > div.site-vote > span > a").get_attribute('href'):
-    # listElement = soup.select("#content > div > div > div.fix-film_item.fix_category.clearfix.list_items > div:nth-child("+str(counter)+") > div > div.movie-poster > aa")
-    #if link == None:counter = 0
-       
-      
-    
     def check_Bs(self,querry,   season="", episode="",episodeName="",link="", quali=[[0,0],[0,0]],isTestCase=False):
         modul = "bs"
         linkFound = False
@@ -533,43 +504,53 @@ class SeleniumScraper(object):
                     continue
                         
         raise #bs serie not found 
-      
-    def checkSTo(self,serieName, imdb, season="04",episode="04",quali=[[0,0],[0,0]],isTestCase=False):
-        modul = "s.to"
-        self.open_Chrome("https://s.to/serien" )
-        self.searchAndClick(search= "serInput", selector=By.ID, querry=serieName.lower())
-        resultList = self.browser.find_elements(By.CSS_SELECTOR,"#seriesContainer li:not(.hidden) a")
-        linkList = [element.get_attribute("href") for element in resultList]     
-        for element in  linkList :
-            link = element
-            self.getWaitUrl(link)
-            imdbElement = self.browser.find_element(By.CSS_SELECTOR, "#series > section > div.container.row > div.series-meta.col-md-6-5.col-sm-6.col-xs-12 > div.series-title > a")
-            if imdb in imdbElement.get_attribute('data-imdb'):        
-                #self.adCheck()
-                self.getWaitUrl(link+ "/staffel-" +str(int(season)))
-                liste = self.browser.find_element(By.CSS_SELECTOR,"#stream > ul:nth-child(4)")
-                episodenListe = liste.find_elements(By.TAG_NAME,"a")
-                for element in episodenListe:
-                    if element.text == str(int(episode)):
-                        element.click()
-                        break
-                self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
-                hosterlist = self.browser.find_element(By.CSS_SELECTOR,"#wrapper > div.seriesContentBox > div.container.marginBottom > div:nth-child(5) > div.hosterSiteVideo > ul")
-                hoster = hosterlist.find_elements(By.TAG_NAME,"a")
-               # hoster = hosterlist.find_elements(By.TAG_NAME,"h4")
-  
-                hosterElementList = self.sortHosterElements(hoster,"S.to")
-                linkList = [element.get_attribute("href") for element in hosterElementList]     
-                for link in  linkList :
-                    self.getWaitUrl(link,10)
-                    if "https://s.to/serie/" in self.browser.current_url: self.checkSwitchTab() 
-                    if "https://s.to/redirect/" in self.browser.current_url: self.captchaCheck(By.CSS_SELECTOR,"body > div:nth-child(2) > div:nth-child(2) > iframe")
+    def imdb_SelectEpisodeSto(self,imdb,link,season,episode,modul,quali,isTestCase):
+        imdbElement = self.browser.find_element(By.CSS_SELECTOR, "#series > section > div.container.row > div.series-meta.col-md-6-5.col-sm-6.col-xs-12 > div.series-title > a")
+        if imdb in imdbElement.get_attribute('data-imdb'):        
+            #self.adCheck()
+            self.getWaitUrl(link+ "/staffel-" +str(int(season)))
+            liste = self.browser.find_element(By.CSS_SELECTOR,"#stream > ul:nth-child(4)")
+            episodenListe = liste.find_elements(By.TAG_NAME,"a")
+            for element in episodenListe:
+                if element.text == str(int(episode)):
+                    element.click()
+                    break
+            self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
+            hosterlist = self.browser.find_element(By.CSS_SELECTOR,"#wrapper > div.seriesContentBox > div.container.marginBottom > div:nth-child(5) > div.hosterSiteVideo > ul")
+            hoster = hosterlist.find_elements(By.TAG_NAME,"a")
+            # hoster = hosterlist.find_elements(By.TAG_NAME,"h4")
+
+            hosterElementList = self.sortHosterElements(hoster,"S.to")
+            linkList = [element.get_attribute("href") for element in hosterElementList]     
+            for link in  linkList :
+                self.getWaitUrl(link,10)
+                if "https://s.to/serie/" in self.browser.current_url: self.checkSwitchTab() 
+                if "https://s.to/redirect/" in self.browser.current_url: self.captchaCheck(By.CSS_SELECTOR,"body > div:nth-child(2) > div:nth-child(2) > iframe")
 #                    self.browser.switch_to.default_content()
-                    try:
-                        self.findVideoSrc(isTestCase,modul,quali)
-                    except:
-                        if "https://s.to" not in self.browser.current_url: self.checkSwitchTab() 
-                        continue
+                try:
+                    self.findVideoSrc(isTestCase,modul,quali)
+                except:
+                    if "https://s.to" not in self.browser.current_url: self.checkSwitchTab() 
+                    continue
+
+    def checkSTo(self,serieName, imdb, season="04",episode="04",quali=[[0,0],[0,0]],isTestCase=False,link=""):
+        modul = "s.to"
+        validLink=False
+        if len(link) < 1:
+            link = "https://s.to/serien"
+            validLink=True
+        self.open_Chrome(link)
+        if validLink and len(self.browser.find_elements(By.CSS_SELECTOR, "#series > section > div.container.row > div.series-meta.col-md-6-5.col-sm-6.col-xs-12 > div.series-title > a")) > 0:
+            self.imdb_SelectEpisodeSto(imdb,link,season,episode,modul,quali,isTestCase)
+        else:
+            self.searchAndClick(search= "serInput", selector=By.ID, querry=serieName.lower())
+            resultList = self.browser.find_elements(By.CSS_SELECTOR,"#seriesContainer li:not(.hidden) a")
+            linkList = [element.get_attribute("href") for element in resultList]     
+            for element in  linkList :
+                link = element
+                self.getWaitUrl(link)
+                self.imdb_SelectEpisodeSto(imdb,link,season,episode,modul,quali,isTestCase)
+        
     def checkCine(self,movieName, imdb, quali=[[0,0],[0,0]],isTestCase=False): # getLinks for no douple code 
         modul  = "cine"
         self.open_Chrome("https://cine.to" ,3)
@@ -579,14 +560,12 @@ class SeleniumScraper(object):
             self.browser.save_screenshot("a.png")
             self.clickWait(element=lang[0],timer=2)
             self.clickWait(By.CSS_SELECTOR,"body > div.container-fluid > div.container-fluid.entries > nav.navbar.navbar-static-top.navbar-search > div > ul > li > ul > li:nth-child(3) > a",2)
-            #self.clickWait(By.XPATH,"/html/body/div[3]/div[2]/nav[1]/div/ul/li/ul/li[3]",2)
-            
+            #self.clickWait(By.XPATH,"/html/body/div[3]/div[2]/nav[1]/div/ul/li/ul/li[3]",2)       
            # self.browser.find_element(By.XPATH,"/html/body/div[3]/div[2]/nav[1]/div/ul/li/a")
         self.searchAndClick(search= "body > div.container-fluid > div.container-fluid.entries > nav.navbar.navbar-static-top.navbar-search > div > input[type=text]", selector=By.CSS_SELECTOR, querry=movieName)        
         
         print(imdb)
         found = False #make go on next page 
-        #add without imdb
         x =0
         while found == False and x <= 5:
             x +=1
@@ -624,20 +603,151 @@ class SeleniumScraper(object):
             links.append(video[0].get_attribute('src'))
             self.getWaitUrl(links[1])
             self.checkUrl(links[1],modul,quali[0],quali[1],True)
-        #else: 
-           # self.checkUrl(links[1],modul,quali[0],quali[1],False)           
+    
+    
+    def downloadFlac(self,fileName=""):  
+            modul  = "musicDownloader"
+         #   fileName ="01 - Nirvana - Rape Me.mp3"  
+            fileName =  os.path.splitext(fileName)[0]
+            playlistPattern = r"^\d{2,3}\s-"
 
+            if re.search(playlistPattern, fileName):
+               fileName = re.sub(playlistPattern, "", fileName, count=1)
+            self.open_Chrome("https://free-mp3-download.net/" ,3,downloader=True)
+            self.searchAndClick(search= "q", selector=By.ID, querry=fileName,button="snd")
+            #loop and check may add loop first child 
+            self.clickWait(By.CSS_SELECTOR,"#results_t > tr:nth-child(1) > td:nth-child(3) > a > button",10) 
+            self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")      
+            quali = self.browser.find_elements(By.CSS_SELECTOR, "#quality-row > div:nth-child(3) > p > label")
+            if len(quali) < 0:
+                #LOGGGERT AND HANDLING #TODO: 
+                quali =  self.browser.find_element(By.CSS_SELECTOR, "#quality-row > div:nth-child(2) > p > label")
+            else:
+                quali = quali[0]
+            self.clickWait(element=quali,timer=3)
+            captcha =  self.browser.find_elements(By.ID,"captcha") 
+            if len(captcha) > 0: 
+                self.clickWait(element=captcha,timer=5)
+                self.captchaCheck(By.TAG_NAME,"iframe")
+                
+            self.clickWait(By.CSS_SELECTOR,"body > main > div > div > div > div > div.card-action > button",7)
+            time.sleep(120)
+            return True
+    
+    def inputText(self,text,selectorType=By.CSS_SELECTOR,selector="sel",dropdown=-1):
+        inputElement = self.browser.find_element(selectorType,selector)
+        #inputElement.send_keys(Keys.RETURN)
+        inputElement.send_keys(text)
+        if(dropdown > -1):
+            inputElement.send_keys(Keys.ARROW_DOWN) 
+            time.sleep(1)
+            inputElement.send_keys(Keys.ENTER) 
+        time.sleep(1)
+
+
+ 
+    def checkFelixoderCheckGarnix(self,start,ziel,startDate,endDate,stops,):  
+        import lxml
+        import pandas as pd
+        from bs4 import BeautifulSoup
+        desired_width = 320
+        pd.set_option('display.width', desired_width)
+        pd.set_option('display.max_columns', 8)
+        stops = "-2"
+        depart = 'VIE'
+        destinations = ['AMS', 'NAP']
+        dates = ['2023-03-15', '2023-03-08']
+        max_price = 100
+        final_df = pd.DataFrame({'depart_from': [],
+                                'arrive_at': [],
+                                'date': [],
+                                'depart_time': [],
+                                'arrival_time': [],
+                                'price': [],
+                                'airline': [],
+                                'flight_duration': []})
+
+        for destination in destinations:
+            for date in dates:                                                                         #price_a #bestflight_a
+                url = f'https://www.kayak.de/flights/{depart}-{destination}/{date}-flexible-3days?sort=price_a&fs=stops={stops}'
+                self.open_Chrome("https://www.kayak.de/" ,3)
+                self.getWaitUrl(url,25)
+                 
+                #results = self.browser.find_element(By.CLASS_NAME,"resultsContainer")
+
+                results = self.browser.find_element(By.CLASS_NAME ,"resultsContainer")
+                resultsText = results.text
+                liste = resultsText.split("€\n")
+
+               # resultsText = results.text.replace("\n", "<br>")
+               # liste = resultsText.split("€<br>")
+
+               # pattern = r"\d{2}\.\d{2}\.[^\n]*€\n"
+                #'Interessierst du dich auch für Flug- + Buspreise?\nWeite deine Suche auch auf Busverbindungen aus.\nMehr anzeigen\nFlug + Bus\n15.03.\n9:20–19:19\nVIEWien\n-\nAMSSloterdijk\n1 Stopp\nCRL-BRU\n9:59 Std.\nRyanair, BlaBlaBus\n0\n0\n51 €\nStandard\nCombigo\nZum Angebot\n15.03.\n6:05–22:20\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW\n16:15 Std.\nWizz Air, easyJet\n0\n0\n70 €\nEconomy\nKiwi.com\nZum Angebot\nInteressierst du dich auch für Flug- + Zugpreise?\nFinde weitere Reisemöglichkeiten mit Zugverbindungen.\nMehr anzeigen\nFlug + Zug\n15.03.\n9:20–17:25\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nCRL-BRU\n8:05 Std.\nRyanair, Thalys\n0\n0\n71 €\nStandard\nCombigo\nZum Angebot\n15.03.\n6:05–22:05\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW-LTN\n16:00 Std.\nWizz Air, easyJet\n0\n0\n71 €\nEconomy\nKiwi.com\nZum Angebot\n15.03.\n6:05–18:50\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW\n12:45 Std.\nWizz Air, easyJet\n72 €\nKiwi.com\n0\n0\n72 €\nEconomy\nKiwi.com\nZum Angebot\n14.03.\n6:25–20:35\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW-LTN\n14:10 Std.\nWizz Air, easyJet\n0\n0\n75 €\nEconomy\nKiwi.com\nZum Angebot\n15.03.\n6:05–20:35\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW-LTN\n14:30 Std.\nWizz Air, easyJet\n76 €\nKiwi.com\n0\n0\n76 €\nEconomy\nKiwi.com\nZum Angebot\n15.03.\n6:05–20:40\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW\n14:35 Std.\nWizz Air, easyJet\n77 €\nKiwi.com\n0\n0\n77 €\nEconomy\nKiwi.com\nZum Angebot\n14.03.\n6:25–17:15\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW\n10:50 Std.\nWizz Air, easyJet\n0\n0\n81 €\nEconomy\nKiwi.com\nZum Angebot\n15.03.\n6:45–13:35\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nMXP\n6:50 Std.\nRyanair, easyJet\n0\n0\n84 €\nStandard\nKiwi.com\nZum Angebot\n15.03.\n6:05–17:25\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW-LTN\n11:20 Std.\nWizz Air, easyJet\n86 €\nKiwi.com\n0\n0\n86 €\nEconomy\nKiwi.com\nZum Angebot\n14.03.\n6:25–18:50\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW\n12:25 Std.\nWizz Air, easyJet\n0\n0\n88 €\nEconomy\nKiwi.com\nZum Angebot\n14.03.\n6:25–17:20\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW-LTN\n10:55 Std.\nWizz Air, easyJet\n0\n0\n92 €\nEconomy\nKiwi.com\nZum Angebot\n15.03.\n21:10–17:25+1\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nSTN\n20:15 Std.\nRyanair, easyJet\n0\n0\n92 €\nStandard\nKiwi.com\nZum Angebot\n15.03.\n21:10–9:00+1\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nSTN-LTN\n11:50 Std.\nRyanair, easyJet\n0\n0\n93 €\nStandard\nKiwi.com\nZum Angebot'
+                regex = r'\d{2}\.\d{2}\.'
+                matched_strings = []
+                for text in liste:
+                        match = re.search(regex, text)
+                        if match:
+                            start = 0 if match.end() < 6 else text[:match.end() - 7].rfind("\n") + 1
+                #            start = 0 if match.end() < 6 else text[:match.end() - 7].rfind("<br>") + 4
+                            alt = text[start:match.end() - 7]
+                            alt = alt if alt != "Zum Angebot" else ""
+                            matched_strings.append([alt,text[match.end() - 6:]])
+                           # matched_strings.append([text[match.end() - 6:],text[start:match.end() - 6]])
+                insertValues = []
+                for ele in matched_strings:
+                    liste = ele[1].split('\n')
+                    price = liste[-1]
+                    if  int(price) > max_price: continue
+                    liste.pop(3)
+                    if len(liste) > 10 :
+                        liste.pop(len(liste) -2)
+                        liste.pop(len(liste) -2)
+                    if liste[-2] == "Werbung": liste.pop(len(liste) -1)
+                    if len(liste) >= 9:
+                        print("no direct flight")
+                    start  =liste[2][2:]
+                    startShort  =liste[2][:2]
+                    destination = liste[3][2:]
+                    destShort = liste[3][:2]
+                    stops = 0 if liste[4] =='Nonstop' else int(liste[4][:2])
+                    NonSop = 0 if stops < 1 else 1 
+                    stops_dest = "" if stops < 1 else liste[5]
+                    Start_Date = liste[0]
+                    End_Date  = liste[0] + liste[0]
+                    duration =  liste[5 + NonSop]
+                    airline =  liste[6 + NonSop]
+                    addDriv = ele[0]
+                    insertValues.append((start,startShort,destination,destShort,stops,stops_dest,airline,addDriv,Start_Date,End_Date,price,duration,"EUR"))
+                    print(liste)
+                    #db
+                    print("--------------------------" + str(len(liste)))
+
+               # resultsHtml = results.get_attribute("innerHTML")
+
+                    ('New York', 'JFK', 'London', 'LHR', 1, 'Paris', '2023-04-01', '2023-04-08', 8, 1000, 'USD', None),
+
+                sql = "INSERT INTO Flights (start, start_short, destination, destination_short, stops, stops_dest,airline,add_infos, Start_Date, End_Date, duration, price, currancy) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                self.db.insertMany(sql,insertValues)
+                #sort
+                #filter out 
+                #-> DB 
+                #chatgpt map 
+                # SCRAPE AND GOGOGOGOGOOG
+                time.sleep(60)
+                time.sleep(60)
+ 
 if __name__ == "__main__":
-   # db =  Database()
-    
-    
     fetcher = SeleniumScraper("db")
+    #fetcher.test()
+    fetcher.checkFelixoderCheckGarnix("VIE","VIE","VIE","VIE","VIE")
     #localHosterList = db.getHoster()
    # fetcher.check_Streamkiste("Breaking Bad", imdb="tt0903747", isMovie="/serie/", season="04",episode="04")#g
    # fetcher.check_Bs("Das Mädchen im Schnee",season="01",episode="01",episodeName="Folge 1")#g
-    #fetcher.checkSTo("Breaking bad", imdb="tt0903747",  season="04",episode="04")#g
+   # hi = fetcher.checkSTo("Breaking bad", imdb="tt0903747",  season="04",episode="04")#g
     #installUblock
-    hi = fetcher.checkCine(movieName="1UP", imdb="tt13487922",isTestCase=False)#g
+    #hi = fetcher.checkCine(movieName="1UP", imdb="tt13487922",isTestCase=False)#g
   #  hi = fetcher.checkBrowser()
-    print(hi)
+   # print(hi)
    # fetcher.closeBrowser()
