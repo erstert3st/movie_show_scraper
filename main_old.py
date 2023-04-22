@@ -1,6 +1,6 @@
 from Database import Database
 from Helper import FileManager, Api
-from Fetcher import fetch
+from main_scrapper import fetch
 from Database import Database
 from SeleniumScraper import SeleniumScraper
 from  Exception import *

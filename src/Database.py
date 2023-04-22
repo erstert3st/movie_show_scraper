@@ -28,9 +28,10 @@ class Database(object):
                                 user="root",
                                 password="password",
                                 database="Ombi"
+                                #database="flights"
                                 )
             #self.connect_db.set_charset_collation('utf8mb4', 'utf8mb4_general_ci')
-            self.cursor =  self.connect_db.cursor()
+            self.cursor =  self.connect_db.cursor(buffered=True)
             print("connected")
             return self.connect_db.is_connected()
         except mysql.connector.Error as err:
@@ -40,7 +41,7 @@ class Database(object):
     def insertMany(self, sql, values):
         try:
             #sql = "insert into Serien(name, link, status) values (%s, %s, %s)"  
-            print(sql % values[0])
+            #print(sql % values[0])
             self.cursor.executemany(sql, values)
             self.connect_db.commit()
             print("commit")
@@ -65,6 +66,19 @@ class Database(object):
             #print("insert into Staffel(serien_id, nr, name, link, status) values (%s, %s, %s, %s, %s)"
             print(sql % values)
             self.cursor.execute(sql, values)
+            self.connect_db.commit()
+            print("commit")
+            return True
+        except mysql.connector.Error as error:
+            print("Failed to insert into MySQL table {}".format(error))
+        return False
+    
+    def insertSql(self, sql):
+        try:
+            #sql = "insert into Serien(name, link, status) values (%s, %s, %s)"  
+            # values = ("testPy1", "test1.Py", "new") 
+            #print("insert into Staffel(serien_id, nr, name, link, status) values (%s, %s, %s, %s, %s)"
+            self.cursor.execute(sql)
             self.connect_db.commit()
             print("commit")
             return True
@@ -96,7 +110,7 @@ class Database(object):
     def getHoster(self):
         try:
             #self.cursor.execute("select LOWER(name),status from Media.hoster where `status` = 'working' ORDER BY priority")
-            self.cursor.execute("select LOWER(name),status from hoster ORDER BY priority")
+            self.cursor.execute("select LOWER(name),status,regex1 from hoster ORDER BY priority")
             hosterList= self.cursor.fetchall()
             return hosterList  # return array of Values
             
@@ -104,16 +118,21 @@ class Database(object):
             print("Failed to select MySQL table {}".format(error))
         return
 
-    def select(self,my_query = "", returnOnlyOne = False, table="", select= "*",  where ="`status` = 'new'"):
+    def select(self, my_query = "", returnOnlyOne = False, table="", select= "*",  where ="`status` = 'new'",clean=False):
         try:
             if(len(my_query) < 1):   
                 my_query ="SELECT "+select+" FROM `" +table+"` WHERE "+where
         # my_query = "select " +select+" from " +table+" where " +cond+""
             self.cursor.execute(my_query)
+            results = []
             if(returnOnlyOne is False):
-                return self.cursor.fetchall()
+                results= self.cursor.fetchall()
             else:
-                return self.cursor.fetchone()
+                return  self.cursor.fetchone()
+            if clean is True: 
+                results = [row[0] for row in results]
+            return results
+
         except mysql.connector.Error as error:
             print("Failed to select table {}".format(error))
         return

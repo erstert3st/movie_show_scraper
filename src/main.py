@@ -8,7 +8,7 @@ from fake_useragent import UserAgent
 import time
 import command 
 import schedule
-from Fetcher import  Fetch
+from main_scrapper import  Main_scrapper
 
 class main(object):
     
@@ -20,9 +20,10 @@ class main(object):
       
     def getVideoLinks(self):
         db = Database()        
-        waiting_Videos = db.select(table="WorkToDo" ,where="isMovie = '0'")
+        waiting_Videos = db.select(table="WorkMovieOnly" ,where="isMovie = '0'")
+     #   waiting_Videos = db.select(table="WorkToDo" ,where="isMovie = '0'")
         api = Api()
-        downloader = Fetch(db)
+        downloader = Main_scrapper(db)
         newLinksFound = False
 
         for counter, video in enumerate(waiting_Videos):

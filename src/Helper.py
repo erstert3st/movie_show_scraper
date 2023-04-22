@@ -18,6 +18,8 @@ class FileManager(object):
         if req.status_code != 200 : raise videoBroken
         try:
             # use widh beause Movies are different
+            #
+            #
             metaData = ffmpeg.probe(videoLink)
             width =","+ str(metaData["streams"][0]['width'])+"," + str(metaData["streams"][0]['height'])
             #height = str(metaData["streams"][0]['height'])

@@ -30,7 +30,7 @@ WORKDIR /$APP_HOME
 
 COPY src $APP_HOME/
 
-RUN pip install -r requirements.txt
+RUN pip install -r requirements.txt  --no-cache-dir 
 #RUN apt install  default-mysql-client ssh  iputils-ping -yq
 #RUN apt install mysql-client ssh -y
 #RUN pip install mysql

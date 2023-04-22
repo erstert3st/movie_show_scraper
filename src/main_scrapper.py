@@ -4,10 +4,8 @@ from  Exception import *
 import time
 import random
 #Todo: open s.to with link
-#Todo: Db ad link 
-#Todo: when this methode is called trigger Jdownloader Api 
 
-class Fetch(object):
+class Main_scrapper(object):
     # Class variable
 
     def __init__(self, db=""):
@@ -32,8 +30,9 @@ class Fetch(object):
         try:
             try:
                 if status == "new" or "skiste" :SeleniumScraper().check_Streamkiste(movieName=name,imdb=imdb, isMovie=isMovie, season=season,episode=episode,quali=quali)
+            
             except searchError or notAvailableError:   
-                print(" #status bs done AND Loggen")
+                print(" #status streamkiste done AND Loggen")
         
             except: # second try
                 try:
@@ -53,6 +52,11 @@ class Fetch(object):
                     except:
                         self.db.uptError(objekt[0],"cine","cine_done",table)
                 return True
+           
+           
+           
+           
+           
             try:
                 if status == "skiste" or "bs": SeleniumScraper().check_Bs(name,season,episode,episodeName,link,quali)
             except searchError or notAvailableError:    
@@ -63,6 +67,10 @@ class Fetch(object):
                 except:
                     self.db.uptError(objekt[0],"bs","bs_done",table)
             
+
+
+
+
             try:    
                 if status == "bs_done" or "s.to": SeleniumScraper().checkSTo(name, imdb,season,episode,quali)
             except searchError or notAvailableError:    
@@ -73,17 +81,11 @@ class Fetch(object):
                 except:
                     self.db.uptError(objekt[0],"s.To","s.to_done",table)
         
+
+
         except captchaLock:
             time.sleep(random(200,560)) 
         except:
             return False
 
         return True
-                
-                
-        
-if __name__ == "__main__":
-    #db =  Database()
-    fetcher = Fetch("db")
-    url = "https://streamkiste.tv/search/" + "berg"
-    fetcher.find_StreamKiste(url)

@@ -4,7 +4,8 @@ import re
 import time
 import requests
 import command
-import undetected_chromedriver.v2 as uc
+import undetected_chromedriver as uc
+import m3u8
 
 from selenium.webdriver.common.keys import Keys
 from Exception import *
@@ -16,6 +17,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.select import Select
 from xvfbwrapper import Xvfb
+from datetime import datetime, timedelta
 
 class SeleniumScraper(object):
     def __init__(self,ua="", anwesend=False,hoster=[],db=""):
@@ -25,7 +27,8 @@ class SeleniumScraper(object):
         self.hoster = hoster if len(hoster) > 1 else self.db.getHoster()
         self.ua = ua if len(ua) > 0 else "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.6 Safari/537.11"
         self.found = {"720p": False, "1080p": False, "altLink": False}#my_dict.update({"b":True})
-        self.xy=[1920,1080]
+        self.xy=[self.round_last_num(random.randint(1450,1550)) ,self.round_last_num(random.randint(800,860))]
+        self.run = 0
         if len(ua) > 1:
             self.ua = ua
         
@@ -38,13 +41,23 @@ class SeleniumScraper(object):
         self.user_data_dir=os.getenv("CHROME_USR_DIR","/home/user/.config/google-chrome/")
         self.getChromeData(self.user_data_dir,True)
         time.sleep(3)
-        if True: self.activateRemoteDebugging()
+        #if True: self.activateRemoteDebugging()
         try: command.run(['pkill', 'chrome']) 
         except:print("no chrome open")
-        self.browser = uc.Chrome(user_data_dir=self.user_data_dir,options=self.options)
+        try:self.browser = uc.Chrome(user_data_dir=self.user_data_dir,options=self.options)
+        except:
+            print("chrome Bugged! find solution !")
+            exit(1) # break Docker Container:DDDDD or riochtige Lösung mit fang von KOMPLETT neu an 
+        self.browser.execute_script("window.open('','tab0');window.open('','tab1');window.open('','tab2');window.open('','tab3');window.open('','tab4');window.open('','tab5');")    
+        self.browser.close()
+        self.browser.switch_to.window('tab0')
+        self.window_handles = self.browser.window_handles
         self.url = link
         time.sleep(1)
+        self.browser.switch_to.window(self.browser.window_handles[0])
+        self.browser.set_window_size(  self.xy[0],   self.xy[1])
         self.getWaitUrl(self.url,3)  # add lang
+      #  self.browser.execute_script("window.open('');")
         return True 
     
     def checkBrowser(self):
@@ -58,13 +71,17 @@ class SeleniumScraper(object):
         try:
             videoSrc = self.browser.find_element(By.TAG_NAME, "video")
             # element found, return True
+            self.link = videoSrc.get_attribute('src')
             return True
         except:
             # element not found, switch to the next frame
-            pass
-        # foreachiframe
-        frames = len(self.browser.find_elements_by_tag_name("iframe"))
-        for iframe in range(frames):
+            print("video not found- try again")
+            # foreachiframe
+        frames = self.browser.find_elements(By.TAG_NAME,"iframe")
+        if len(frames) <=0 :
+            self.browser.switch_to.default_content()
+            self.findNestedVideo()
+        for iframe in frames:
             try:
                 # switch to the current iframe
                 self.browser.switch_to.frame(iframe)
@@ -95,7 +112,7 @@ class SeleniumScraper(object):
         except:
             print("error by bypass restore notif")
 
-    def getChromeData(self,userDir="",skipRemoveError=True,downloader=False):
+    def getChromeData(self,userDir="",skipRemoveError=False,downloader=False):
         self.url, self.Browser, self.title = "","",""
         if os.getenv("CHROME_USR_DIR") is not None:
              vdisplay = Xvfb(width= self.xy[0], height= self.xy[1], colordepth=16)
@@ -106,8 +123,8 @@ class SeleniumScraper(object):
         options = uc.ChromeOptions()
 
 
-        options.add_argument('--disable-gpu')
-        options.add_argument("--no-sandbox")
+      #  options.add_argument('--disable-gpu')
+     #   options.add_argument("--no-sandbox")
        # self.options.add_argument("-user-agent='"+self.ua+"'")
       #  options.user_data_dir = "/home/user/.config/google-chrome"
         #options.add_argument("user-data-dir='/home/user/.config/google-chrome'")
@@ -122,12 +139,14 @@ class SeleniumScraper(object):
         #options.add_argument("--enable-logging=stderr --v=1")
         #options.add_argument("--profile-directory=Default")
         options.add_argument("--profile-directory=Defau1t")
+        #options.add_argument("--window-size=800,600")
         options.debugger_address = "localhost:9222"
 
        # options.add_argument("--profile-directory=test_clean")
       #  options.add_argument("--lang=en")
         #options.add_experimental_option('prefs', {'intl.accept_languages':  "de,DE"})
-        options.add_argument("--window-size="+str(self.xy[0])+","+str(self.xy[1]))
+      #  options.add_argument("--window-size="+str(self.xy[0])+","+str(self.xy[1]))
+
         #options.add_argument("--disable-session-crashed-bubble")
         if downloader is True:
             options.add_experimental_option("prefs", {"download.default_directory": "/path/to/download/folder",
@@ -152,12 +171,9 @@ class SeleniumScraper(object):
     def checkSwitchTab(self):
         # Get the list of open window handles
         window_handles = self.browser.window_handles
-        if len(window_handles) > 1:
-            for window_handle in window_handles:
-                # Don't do anything if it's the same window as the current one
-                if window_handle != self.browser.current_window_handle:
-                    self.browser.switch_to.window(window_handle)
-                    break 
+        if len(window_handles) > 6 :#and self.browser.title != 
+            result = [item for item in window_handles if item not in self.window_handles]
+            self.browser.switch_to.window(result[0])
         time.sleep(5)
 
     def clickWait(self,selectorType=By.CSS_SELECTOR,selector="sel",timer=5,element=""): # add ad waiter
@@ -199,9 +215,10 @@ class SeleniumScraper(object):
         if len(mayCaptcha) < 1 : 
             #LOGGGER !!!!! 
             return False
-        mayCaptcha[0].click()
+        time.sleep(2)
+        self.clickWait(element =mayCaptcha[0],timer=3)
+        self.clickWait(element =mayCaptcha[0],timer=2)
         while ErrorInfo is False:
-
             time.sleep(3)
             audio_url = self.browser.find_elements(By.CLASS_NAME, "rc-audiochallenge-tdownload-link")[0].get_attribute('href')
             time.sleep(1) 
@@ -256,16 +273,46 @@ class SeleniumScraper(object):
             self.get_link(self.url)
             return
     #TodoInerUrl
+    def checkHls(self,element,id,movieOrSerie,modul,curremtBestQuali=["1000","0"],curremtAltQuali=["0","0"],innerUrl=False):
+
+
+        pattern = r"sources\s*=\s*{\s*'hls'\s*:\s*'(.*)',"
+        match = re.search(pattern, script_text)
+
+        if match:
+            hls_url = match.group(1)
+            r = requests.get(hls_url)
+            manifest = r.text
+            # Parse the manifest file
+            m3u8_obj = m3u8.loads(manifest)
+
+            # Iterate over the segment URLs and obtain the size of each segment
+            segment_sizes = []
+            for segment in m3u8_obj.segments:
+                r = requests.head(segment.absolute_uri)
+                segment_sizes.append(int(r.headers.get('content-length', 0)))
+
+            # Calculate the total size of the HLS stream
+            total_size = sum(segment_sizes)
+
+            print(f'Total size of HLS stream: {total_size} bytes')
+            print(hls_url)
+        else:
+            print("Value of 'sources.hls' not found in the script")    
+
+
+    
     def checkUrl(self,link,id,movieOrSerie,modul,curremtBestQuali=["1000","0"],curremtAltQuali=["0","0"],innerUrl=False):
             filemanager = FileManager()
             reqCode = requests.head(link).status_code
            # if reqCode == 200: 
             quality = []
             quality.append(0)
-            innerUrl: quality = filemanager.checkVideoSize(link)
+
+            quality = filemanager.checkVideoSize(link)
             print("found link: " + link)
             intNum = int(quality[0])
-
+            #ERROR
             if intNum > int(curremtBestQuali[0]):
                 temp= ""
             elif intNum > int(curremtAltQuali[0]):
@@ -286,17 +333,19 @@ class SeleniumScraper(object):
   # self.browser.execute_script(command) round(name['width'] / 2)
  #   hi = actions1.move_by_offset( round(name['width'] / 2), round(name['height'] / 2))
 
-    def clickMiddle(self,howOft=1,display=[],x=-1,y=-1):
-        if x < 0 or y < 0:
-            x=round(display['width'] / 2)
-            y=round(display['height'] / 2)
+    def clickMiddle(self,howOft=1,xy=[]):
+        if len(xy) <= 1 :
+            display = self.browser.get_window_size() 
+            xy.append(round(display['width'] / 2))
+            xy.append(round(display['height'] / 2))
         action = ActionChains(self.browser)
-        if len(display) < 2: display = self.browser.get_window_size() 
-        mouse =  action.move_by_offset(x,y)
+        mouse =  action.move_by_offset(xy[0],xy[1])
         for y in range(0,howOft):
             mouse.click().perform()
             print("clickDone")
             time.sleep(3)
+        mouse =  action.move_by_offset(-xy[0],-xy[1])
+
 
     def captchaCheck(self,selectorType,selector):
         captchaSearch = []
@@ -387,34 +436,52 @@ class SeleniumScraper(object):
             dropdown.select_by_index(value)
         time.sleep(2)
     
-    def sortHosterElements(self,elements,comeFrom="bs",maxLen=3):
-       # sorted_elements = [element for element in elements if element.text.lower() in self.hoster]
-       # sorted_elements = [element for element in elements if element.text.split("\n")[0].strip().lower() in self.hoster] # split for s.to
+    # def sortHosterElements(self,elements,comeFrom="bs",maxLen=3):
+    #    # sorted_elements = [element for element in elements if element.text.lower() in self.hoster]
+    #    # sorted_elements = [element for element in elements if element.text.split("\n")[0].strip().lower() in self.hoster] # split for s.to
+    #     sorted_elements = []
+    #     updateHoster = []
+    #     for element in elements:
+    #         hosterStr = element.text.split("\n")[0].strip().lower()
+    #         for hoster in self.hoster:
+    #             if hoster[0] == hosterStr and hoster[1] == 'working':
+    #                 nested_Video = True if hoster[2] == 1 else False
+    #                 sorted_elements.append(element,nested_Video)
+    #                 break
+    #             elif hoster[0] == hosterStr :  
+    #                 break
+    #         else:
+    #             if len(hosterStr) > 0:
+    #                 updateHoster.append((hosterStr, 99, 'new',comeFrom))
+
+    #     #sorted_elements = sorted(sorted_elements, key=lambda x: [hoster[0] for hoster in self.hoster if hoster[0] == x][0])
+
+
+
+    def sortHosterElements(self, elements, comeFrom="bs", maxLen=3):
         sorted_elements = []
         updateHoster = []
         for element in elements:
             hosterStr = element.text.split("\n")[0].strip().lower()
             for hoster in self.hoster:
                 if hoster[0] == hosterStr and hoster[1] == 'working':
-                    sorted_elements.append(element)
+                    nested_Video = True if hoster[2] == 1 else False
+                    sorted_elements.append((element, nested_Video,hosterStr))
                     break
                 elif hoster[0] == hosterStr :  
                     break
             else:
                 if len(hosterStr) > 0:
-                    updateHoster.append((hosterStr, 99, 'new',comeFrom))
-
-        #sorted_elements = sorted(sorted_elements, key=lambda x: [hoster[0] for hoster in self.hoster if hoster[0] == x][0])
+                    updateHoster.append((hosterStr, 99, 'new', comeFrom))
 
         if(len(updateHoster) > 0):
             print("update db") 
             sql = "insert into hoster(name, priority, status,regex3) values (%s, %s, %s , %s)" 
-            self.db.insertMany(sql,updateHoster)
-       # return sorted_elements
-        
+            self.db.insertMany(sql, updateHoster)
+            
         if len(sorted_elements) > 1:
-            hosterList  =   [hoster[0] for hoster in self.hoster] 
-            sorted_elements.sort(key=lambda element: hosterList.index(element.text.split("\n")[0].strip().lower()))
+            hosterList  = [hoster[0] for hoster in self.hoster] 
+            sorted_elements.sort(key=lambda element: hosterList.index(element[0].text.split("\n")[0].strip().lower()))
             return sorted_elements[:maxLen]
         print(sorted_elements)
         return sorted_elements
@@ -437,23 +504,28 @@ class SeleniumScraper(object):
             self.selectDropdown(selector=By.ID,selectorValue= "season", checkIfFound="Staffel " + season)
             self.selectDropdown(selector=By.ID,selectorValue= "episode", checkIfFound="Ep " + episode)
         else:
-            self.selectDropdown(By.ID, "rel",0)
+            self.selectDropdown(By.ID, "rel",3)
+         #   self.selectDropdown(By.ID, "rel",0)
 
         hosterElementList = self.browser.find_elements(By.ID,"stream-links")
         hosterElementList = self.sortHosterElements(hosterElementList,"stramkiste")
         links = []
         for hoster in hosterElementList:
 
-            self.clickWait("","", 10,hoster)
+            self.clickWait("","", 10,hoster[0])
+            self.browser.execute_script("window.scrollTo(0, 0)")
+            self.browser.execute_script("document.body.style.zoom='100%'")
             self.browser.switch_to.frame("iframe")
             self.captchaCheck(By.CSS_SELECTOR,"body > div > div:nth-child(2) > iframe")
-            try:
-                #xy #Todo
-                x=0
-                y=0
-                self.findVideoSrc(isTestCase,modul,quali,x,y,True)
+            try:#
+                xy = []
+                cacheXy = self.browser.get_window_size()
+                xy.append(round(cacheXy['width'] / 2))
+                xy.append(round(cacheXy['height'] * 3/4))
+                self.findVideoSrc(isTestCase,modul,quali, xy,hoster[1],hoster[2] )
             except:
                 continue
+        return
     def check_Bs(self,querry,   season="", episode="",episodeName="",link="", quali=[[0,0],[0,0]],isTestCase=False):
         modul = "bs"
         linkFound = False
@@ -490,15 +562,12 @@ class SeleniumScraper(object):
                 hosterElementList = self.sortHosterElements(hoster,"BS")
     
             for hoster in hosterElementList:
-                self.clickWait("","", 10,hoster)
+                self.clickWait("","", 10,hoster[0])
                 self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
                 self.captchaCheck(By.CSS_SELECTOR,"body > div:nth-child(9) > div:nth-child(2) > iframe")
                 #add iframe handler
-                #xy #Todo
-                x=0
-                y=0
                 try:
-                    self.findVideoSrc(isTestCase,modul,quali,x,y,True)
+                    self.findVideoSrc(isTestCase,modul,quali,hoster[1],hoster[2])
                 except:
                     if "https://bs.to" not in self.browser.current_url: self.checkSwitchTab() 
                     continue
@@ -528,7 +597,7 @@ class SeleniumScraper(object):
                 if "https://s.to/redirect/" in self.browser.current_url: self.captchaCheck(By.CSS_SELECTOR,"body > div:nth-child(2) > div:nth-child(2) > iframe")
 #                    self.browser.switch_to.default_content()
                 try:
-                    self.findVideoSrc(isTestCase,modul,quali)
+                    self.findVideoSrc(isTestCase,modul,quali,[0,0],hoster[1],hoster[2])
                 except:
                     if "https://s.to" not in self.browser.current_url: self.checkSwitchTab() 
                     continue
@@ -584,25 +653,48 @@ class SeleniumScraper(object):
         hosterElementList = [hoster.find_element(By.TAG_NAME, "span") for hoster in hosterElementListwithJunk if len(hoster.find_elements(By.TAG_NAME, "span")[0].text) > 1]        
         sortedElementList = self.sortHosterElements(hosterElementList,modul)
         for hoster in sortedElementList:
-            self.clickWait("","", 5,hoster)
+            self.clickWait("","", 5,hoster[0])
             if "cine.to/#t" in self.browser.current_url: self.checkSwitchTab()
             if "cine.to/out/" in self.browser.current_url: self.captchaCheck(By.CSS_SELECTOR,"body > div > div:nth-child(2) > iframe")
             try:
-                self.findVideoSrc(isTestCase,modul,quali)
+                self.findVideoSrc(isTestCase,modul,quali,nestedVideo=hoster[1], name=hoster[2])
             except:# videoBroken:
                 continue
         return True
 
-    def findVideoSrc(self,isTestCase,modul,quali,x,y,nestedVideo=False):
-        self.clickMiddle(4)
-        video = self.findNestedVideo() if nestedVideo else self.browser.find_elements(By.TAG_NAME,"video")
-        links = []
-        links.append(self.browser.current_url)
+    def findVideoSrc(self,isTestCase,modul,quali,xy=[],nestedVideo=False,name =""):
+        self.clickMiddle(4,xy)
+        self.link = ""
+        if name.lower() == "voe":
+            time.sleep(10)
+            tempIframe =  self.browser.find_element(By.TAG_NAME,"iframe")  
+            self.link =  tempIframe.get_attribute('src')       
+        elif modul == "cine":
+            print("may edit these")
+        else:
+            if nestedVideo is False : self.browser.switch_to.default_content()
+            self.browser.find_elements(By.TAG_NAME,"video")
+            if len(self.link) <= 0 :
+                self.findNestedVideo() 
+
+            if self.link != "" and self.link != []:
+                # switch to the second tab
+                self.browser.switch_to.window('tab' + str(self.run))
+                time.sleep(2)
+                self.getWaitUrl(self.link,10)
+                time.sleep(5)
+#        links = []
+ #       links.append(self.browser.current_url)
         if isTestCase : return self.browser.current_url 
-        if len(video) > 0: 
-            links.append(video[0].get_attribute('src'))
-            self.getWaitUrl(links[1])
-            self.checkUrl(links[1],modul,quali[0],quali[1],True)
+            #do som in 2 tab 
+        self.checkHls(self.browser.current_url ,modul,quali[0],quali[1],True)
+        self.checkUrl(self.browser.current_url ,modul,quali[0],quali[1],True)
+
+        # close the second tab
+        #self.browser.close()
+        # switch back to the first tab
+        self.browser.switch_to.window(self.browser.window_handles[0])
+
     
     
     def downloadFlac(self,fileName=""):  
@@ -618,14 +710,7 @@ class SeleniumScraper(object):
             #loop and check may add loop first child 
             self.clickWait(By.CSS_SELECTOR,"#results_t > tr:nth-child(1) > td:nth-child(3) > a > button",10) 
             self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")      
-            quali = self.browser.find_elements(By.CSS_SELECTOR, "#quality-row > div:nth-child(3) > p > label")
-            if len(quali) < 0:
-                #LOGGGERT AND HANDLING #TODO: 
-                quali =  self.browser.find_element(By.CSS_SELECTOR, "#quality-row > div:nth-child(2) > p > label")
-            else:
-                quali = quali[0]
-            self.clickWait(element=quali,timer=3)
-            captcha =  self.browser.find_elements(By.ID,"captcha") 
+            captchaChecka =  self.browser.find_elements(By.ID,"captcha") 
             if len(captcha) > 0: 
                 self.clickWait(element=captcha,timer=5)
                 self.captchaCheck(By.TAG_NAME,"iframe")
@@ -644,110 +729,219 @@ class SeleniumScraper(object):
             inputElement.send_keys(Keys.ENTER) 
         time.sleep(1)
 
+    def freshBrowser(self):
+        self.browser.close()
+        del self.browser
+        self.open_Chrome("https://www.skyscanner.net/" ,2)
 
- 
+    
+    def skyscannerExplor(self):
+        self.open_Chrome("https://www.skyscanner.net/" ,2)
+
+        laender = ["it","ro","es","uk","nl","ie","tr","ch","gr","tk"]
+        start_date_str = '2023-03-22'
+        end_date_str = '2023-03-30'
+        directFlights = "false"
+        max_price = 22
+        # convert the start and end dates to datetime objects
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+        # create list of dates between dates 
+        date_list = [date.strftime('%y%m%d') for date in (start_date + timedelta(n) for n in range((end_date - start_date).days + 1))]
+
+        for land in laender:
+            for dat in date_list:
+                #url =   "https://www.skyscanner.net/transport/flights-from/"+land+"/"+dat+"/?adultsv2=1&cabinclass=economy&childrenv2=&ref=home&is_banana_refferal=true&rtn=0&preferdirects="+directFlights+"&outboundaltsenabled=false&inboundaltsenabled=false"
+                url =  "https://www.skyscanner.net/transport/flights-from/"+land+"/"+dat+"/?adults=1&adultsv2=1&cabinclass=economy&children=0&childrenv2=&inboundaltsenabled=false&infants=0&outboundaltsenabled=false&preferdirects=false&ref=home&rtn=0"
+
+                self.getWaitUrl(url,random.randint(3,5))
+                counter = 1
+                price = self.browser.find_element(By.CSS_SELECTOR,"#destinations > ul > li:nth-child(1) > a > div > p")
+                while int(price.text[6:]) < max_price:
+                    checker = True
+                    price = self.browser.find_element(By.CSS_SELECTOR,"#destinations > ul > li:nth-child("+str(counter)+") > a > div")
+                    sub_counter = 1
+                    country = self.browser.find_element(By.CSS_SELECTOR,"#destinations > ul > li:nth-child(1) > a > div > h3")                    
+                    while checker is True:
+                        #open window
+                        self.clickWait(By.CSS_SELECTOR,"#destinations > ul > li:nth-child("+str(counter)+") > a > div > div > svg",3)
+                        
+                        sub_price = self.browser.find_element(By.CSS_SELECTOR,"#destinations > ul > li.browse-list-category.open > ul > li:nth-child("+str(counter)+") > div > div > div.browse-data-entry.trip-link > a.flightLink.visible > div > span").text[6:]
+                        city =  self.browser.find_element(By.CSS_SELECTOR,"#destinations > ul > li.browse-list-category.open > ul > li:nth-child("+str(sub_counter)+") > div > div > div.browse-data-entry.trip-link > h3").text
+                        direct = self.browser.find_element(By.CSS_SELECTOR,"#destinations > ul > li.browse-list-category.open > ul > li:nth-child("+str(sub_counter)+") > div > div > div.browse-data-entry.trip-link > p").text
+                        hrf = self.browser.find_element(By.CSS_SELECTOR,"#destinations > ul > li.browse-list-category.open > ul > li:nth-child("+str(sub_counter)+") > div > div > div.browse-data-entry.trip-link > a.flightLink.visible").get_attribute('href')
+                        time.sleep(random.randint(1,3))
+                        #close window
+                        self.clickWait(By.CSS_SELECTOR,"#destinations > ul > li:nth-child("+str(counter)+") > a > div > div > svg",random.randint(2,4))
+                        if int(sub_price) > max_price : checker = False
+                        sub_counter +=1
+                        #insert DB
+                    
+                    #close sub window
+                    self.clickWait(By.CSS_SELECTOR,"#flights-search-summary-root > div > section > div.App_searchDetailsNudgerContainer__N2NmM > nav > div > button:nth-child(3)",random.randint(2,4))
+                    counter +=1
+                
+                # open  
+                # get data
+                # get innerdata
+                # db update
+                # insert
+                # update if exist 
+            self.freshBrowser()
+            
+            log_file = open('my_log_file.txt', 'a')
+            log_file.write(land + " done "  + '\n')
+    
     def checkFelixoderCheckGarnix(self,start,ziel,startDate,endDate,stops,):  
-        import lxml
-        import pandas as pd
-        from bs4 import BeautifulSoup
-        desired_width = 320
-        pd.set_option('display.width', desired_width)
-        pd.set_option('display.max_columns', 8)
-        stops = "-2"
-        depart = 'VIE'
-        destinations = ['AMS', 'NAP']
-        dates = ['2023-03-15', '2023-03-08']
-        max_price = 100
-        final_df = pd.DataFrame({'depart_from': [],
-                                'arrive_at': [],
-                                'date': [],
-                                'depart_time': [],
-                                'arrival_time': [],
-                                'price': [],
-                                'airline': [],
-                                'flight_duration': []})
+        import datetime
+        sql = "SELECT int_short,regex3  FROM airports WHERE search_A = 1 ORDER BY int_short ASC"
+        startPort = self.db.select(my_query=sql, returnOnlyOne=True)
+        sqlSearch = "SELECT int_short FROM airports WHERE  search_B = 1 ORDER BY int_short ASC"
+        searchPorts = self.db.select(my_query=sqlSearch,clean=True)
 
-        for destination in destinations:
+        if startPort[1] != None and [1] != "" :
+            index = searchPorts.index(startPort[1])
+            searchPorts = searchPorts[index +1:]
+        #stops = "-2"
+        depart = startPort[0]
+        destinations = searchPorts
+        dates = ['2023-03-13', '2023-03-20','2023-03-27'] #Todo Dynamic!!! 
+       # dates = ['2023-03-27'] #Todo Dynamic!!! 
+        max_price = 37
+        self.open_Chrome("https://www.kayak.de/" ,3)
+        #stops = ['0','1','-2'] 
+        stops = ['0'] 
+
+
+
+        for destination in searchPorts:
+            insertValues = []
             for date in dates:                                                                         #price_a #bestflight_a
-                url = f'https://www.kayak.de/flights/{depart}-{destination}/{date}-flexible-3days?sort=price_a&fs=stops={stops}'
-                self.open_Chrome("https://www.kayak.de/" ,3)
-                self.getWaitUrl(url,25)
-                 
-                #results = self.browser.find_element(By.CLASS_NAME,"resultsContainer")
+                for stop in stops:
+                    url = f'https://www.kayak.de/flights/{depart}-{destination}/{date}-flexible-3days?sort=price_a&fs=price=-{max_price};stops={stop}'        
+                    
+                    self.getWaitUrl(url,22)
+                    
+                    results = self.browser.find_element(By.CLASS_NAME ,"resultsContainer")
+                    resultsText = results.text
+                    liste = resultsText.split("€\n")
 
-                results = self.browser.find_element(By.CLASS_NAME ,"resultsContainer")
-                resultsText = results.text
-                liste = resultsText.split("€\n")
+                # pattern = r"\d{2}\.\d{2}\.[^\n]*€\n"
+                    #'Interessierst du dich auch für Flug- + Buspreise?\nWeite deine Suche auch auf Busverbindungen aus.\nMehr anzeigen\nFlug + Bus\n15.03.\n9:20–19:19\nVIEWien\n-\nAMSSloterdijk\n1 Stopp\nCRL-BRU\n9:59 Std.\nRyanair, BlaBlaBus\n0\n0\n51 €\nStandard\nCombigo\nZum Angebot\n15.03.\n6:05–22:20\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW\n16:15 Std.\nWizz Air, easyJet\n0\n0\n70 €\nEconomy\nKiwi.com\nZum Angebot\nInteressierst du dich auch für Flug- + Zugpreise?\nFinde weitere Reisemöglichkeiten mit Zugverbindungen.\nMehr anzeigen\nFlug + Zug\n15.03.\n9:20–17:25\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nCRL-BRU\n8:05 Std.\nRyanair, Thalys\n0\n0\n71 €\nStandard\nCombigo\nZum Angebot\n15.03.\n6:05–22:05\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW-LTN\n16:00 Std.\nWizz Air, easyJet\n0\n0\n71 €\nEconomy\nKiwi.com\nZum Angebot\n15.03.\n6:05–18:50\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW\n12:45 Std.\nWizz Air, easyJet\n72 €\nKiwi.com\n0\n0\n72 €\nEconomy\nKiwi.com\nZum Angebot\n14.03.\n6:25–20:35\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW-LTN\n14:10 Std.\nWizz Air, easyJet\n0\n0\n75 €\nEconomy\nKiwi.com\nZum Angebot\n15.03.\n6:05–20:35\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW-LTN\n14:30 Std.\nWizz Air, easyJet\n76 €\nKiwi.com\n0\n0\n76 €\nEconomy\nKiwi.com\nZum Angebot\n15.03.\n6:05–20:40\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW\n14:35 Std.\nWizz Air, easyJet\n77 €\nKiwi.com\n0\n0\n77 €\nEconomy\nKiwi.com\nZum Angebot\n14.03.\n6:25–17:15\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW\n10:50 Std.\nWizz Air, easyJet\n0\n0\n81 €\nEconomy\nKiwi.com\nZum Angebot\n15.03.\n6:45–13:35\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nMXP\n6:50 Std.\nRyanair, easyJet\n0\n0\n84 €\nStandard\nKiwi.com\nZum Angebot\n15.03.\n6:05–17:25\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW-LTN\n11:20 Std.\nWizz Air, easyJet\n86 €\nKiwi.com\n0\n0\n86 €\nEconomy\nKiwi.com\nZum Angebot\n14.03.\n6:25–18:50\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW\n12:25 Std.\nWizz Air, easyJet\n0\n0\n88 €\nEconomy\nKiwi.com\nZum Angebot\n14.03.\n6:25–17:20\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW-LTN\n10:55 Std.\nWizz Air, easyJet\n0\n0\n92 €\nEconomy\nKiwi.com\nZum Angebot\n15.03.\n21:10–17:25+1\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nSTN\n20:15 Std.\nRyanair, easyJet\n0\n0\n92 €\nStandard\nKiwi.com\nZum Angebot\n15.03.\n21:10–9:00+1\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nSTN-LTN\n11:50 Std.\nRyanair, easyJet\n0\n0\n93 €\nStandard\nKiwi.com\nZum Angebot'
+                    regex = r'\d{2}\.\d{2}\.'
+                    matched_strings = []
+                    for text in liste:
+                            match = re.search(regex, text)
+                            if match:
+                                start = 0 if match.end() < 6 else text[:match.end() - 7].rfind("\n") + 1
+                    #            start = 0 if match.end() < 6 else text[:match.end() - 7].rfind("<br>") + 4
+                                alt = text[start:match.end() - 7]
+                                alt = alt if alt != "Zum Angebot" else ""
+                                matched_strings.append([alt,text[match.end() - 6:]])
+                            # matched_strings.append([text[match.end() - 6:],text[start:match.end() - 6]])
+                    insertValues = []
+                    for ele in matched_strings:
+                        liste = ele[1].split('\n')
+                        price = int(liste[-1])
+                        if  price > max_price: continue
+                        liste.pop(3)
+                        if len(liste) > 10 :
+                            liste.pop(len(liste) -2)
+                            liste.pop(len(liste) -2)
+                        if liste[-2] == "Werbung": liste.pop(len(liste) -1)
+                        if len(liste) >= 9:
+                            print("no direct flight")
 
-               # resultsText = results.text.replace("\n", "<br>")
-               # liste = resultsText.split("€<br>")
+                        # parse the date and time from the input string
+                        date_str, time_str = liste[0]+"2023", liste[1].split('–')
+                        start_time_str, end_time_str = time_str[0], time_str[1]
+                        nextDay=0
+                        try:
+                           var = int(end_time_str.split(':')[1])
+                        except:
+                           # var =  end_time_str.split(':')
+                            plus =  end_time_str.split('+')
+                            nextDay=int(plus[1])
+                            end_time_str =  plus[0]
+                        start_time = datetime.datetime.strptime(f"{date_str}{start_time_str}", '%d.%m.%Y%H:%M')
+                        #if start_time_str
+                        end_time = datetime.datetime.strptime(f"{date_str}{end_time_str}", '%d.%m.%Y%H:%M')
+                        if nextDay > 0:
+                            end_time =  end_time + datetime.timedelta(hours=24 * nextDay)
+                        # format the datetime objects as strings in the MySQL format
+                        start_time_mysql = start_time.strftime('%Y-%m-%d %H:%M:%S')
+                        end_time_mysql = end_time.strftime('%Y-%m-%d %H:%M:%S')
+                        duration = end_time - start_time
 
-               # pattern = r"\d{2}\.\d{2}\.[^\n]*€\n"
-                #'Interessierst du dich auch für Flug- + Buspreise?\nWeite deine Suche auch auf Busverbindungen aus.\nMehr anzeigen\nFlug + Bus\n15.03.\n9:20–19:19\nVIEWien\n-\nAMSSloterdijk\n1 Stopp\nCRL-BRU\n9:59 Std.\nRyanair, BlaBlaBus\n0\n0\n51 €\nStandard\nCombigo\nZum Angebot\n15.03.\n6:05–22:20\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW\n16:15 Std.\nWizz Air, easyJet\n0\n0\n70 €\nEconomy\nKiwi.com\nZum Angebot\nInteressierst du dich auch für Flug- + Zugpreise?\nFinde weitere Reisemöglichkeiten mit Zugverbindungen.\nMehr anzeigen\nFlug + Zug\n15.03.\n9:20–17:25\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nCRL-BRU\n8:05 Std.\nRyanair, Thalys\n0\n0\n71 €\nStandard\nCombigo\nZum Angebot\n15.03.\n6:05–22:05\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW-LTN\n16:00 Std.\nWizz Air, easyJet\n0\n0\n71 €\nEconomy\nKiwi.com\nZum Angebot\n15.03.\n6:05–18:50\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW\n12:45 Std.\nWizz Air, easyJet\n72 €\nKiwi.com\n0\n0\n72 €\nEconomy\nKiwi.com\nZum Angebot\n14.03.\n6:25–20:35\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW-LTN\n14:10 Std.\nWizz Air, easyJet\n0\n0\n75 €\nEconomy\nKiwi.com\nZum Angebot\n15.03.\n6:05–20:35\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW-LTN\n14:30 Std.\nWizz Air, easyJet\n76 €\nKiwi.com\n0\n0\n76 €\nEconomy\nKiwi.com\nZum Angebot\n15.03.\n6:05–20:40\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW\n14:35 Std.\nWizz Air, easyJet\n77 €\nKiwi.com\n0\n0\n77 €\nEconomy\nKiwi.com\nZum Angebot\n14.03.\n6:25–17:15\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW\n10:50 Std.\nWizz Air, easyJet\n0\n0\n81 €\nEconomy\nKiwi.com\nZum Angebot\n15.03.\n6:45–13:35\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nMXP\n6:50 Std.\nRyanair, easyJet\n0\n0\n84 €\nStandard\nKiwi.com\nZum Angebot\n15.03.\n6:05–17:25\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW-LTN\n11:20 Std.\nWizz Air, easyJet\n86 €\nKiwi.com\n0\n0\n86 €\nEconomy\nKiwi.com\nZum Angebot\n14.03.\n6:25–18:50\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW\n12:25 Std.\nWizz Air, easyJet\n0\n0\n88 €\nEconomy\nKiwi.com\nZum Angebot\n14.03.\n6:25–17:20\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW-LTN\n10:55 Std.\nWizz Air, easyJet\n0\n0\n92 €\nEconomy\nKiwi.com\nZum Angebot\n15.03.\n21:10–17:25+1\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nSTN\n20:15 Std.\nRyanair, easyJet\n0\n0\n92 €\nStandard\nKiwi.com\nZum Angebot\n15.03.\n21:10–9:00+1\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nSTN-LTN\n11:50 Std.\nRyanair, easyJet\n0\n0\n93 €\nStandard\nKiwi.com\nZum Angebot'
-                regex = r'\d{2}\.\d{2}\.'
-                matched_strings = []
-                for text in liste:
-                        match = re.search(regex, text)
-                        if match:
-                            start = 0 if match.end() < 6 else text[:match.end() - 7].rfind("\n") + 1
-                #            start = 0 if match.end() < 6 else text[:match.end() - 7].rfind("<br>") + 4
-                            alt = text[start:match.end() - 7]
-                            alt = alt if alt != "Zum Angebot" else ""
-                            matched_strings.append([alt,text[match.end() - 6:]])
-                           # matched_strings.append([text[match.end() - 6:],text[start:match.end() - 6]])
-                insertValues = []
-                for ele in matched_strings:
-                    liste = ele[1].split('\n')
-                    price = liste[-1]
-                    if  int(price) > max_price: continue
-                    liste.pop(3)
-                    if len(liste) > 10 :
-                        liste.pop(len(liste) -2)
-                        liste.pop(len(liste) -2)
-                    if liste[-2] == "Werbung": liste.pop(len(liste) -1)
-                    if len(liste) >= 9:
-                        print("no direct flight")
-                    start  =liste[2][2:]
-                    startShort  =liste[2][:2]
-                    destination = liste[3][2:]
-                    destShort = liste[3][:2]
-                    stops = 0 if liste[4] =='Nonstop' else int(liste[4][:2])
-                    NonSop = 0 if stops < 1 else 1 
-                    stops_dest = "" if stops < 1 else liste[5]
-                    Start_Date = liste[0]
-                    End_Date  = liste[0] + liste[0]
-                    duration =  liste[5 + NonSop]
-                    airline =  liste[6 + NonSop]
-                    addDriv = ele[0]
-                    insertValues.append((start,startShort,destination,destShort,stops,stops_dest,airline,addDriv,Start_Date,End_Date,price,duration,"EUR"))
-                    print(liste)
-                    #db
-                    print("--------------------------" + str(len(liste)))
+                        # convert the duration to hours
+                        duration_hours = duration.total_seconds() / 3600
 
-               # resultsHtml = results.get_attribute("innerHTML")
+                        print(f"Duration: {duration_hours:.2f} hours")
 
-                    ('New York', 'JFK', 'London', 'LHR', 1, 'Paris', '2023-04-01', '2023-04-08', 8, 1000, 'USD', None),
+                        start  =liste[2][3:]
+                        startShort  =liste[2][:3]
+                        destinationVar = liste[3][3:]
+                        destShort = liste[3][:3]
+                        stopss = 0 if liste[4] =='Nonstop' else int(liste[4][:2])
+                        NonSop = 0 if stopss < 1 else 1 
+                        stops_dest = "" if stopss < 1 else liste[5]
+                        Start_Date = start_time_mysql
+                        End_Date  = end_time_mysql
+                        duration =  liste[5 + NonSop]
+                        airline =  duration_hours
+                        addDriv = ele[0]
 
-                sql = "INSERT INTO Flights (start, start_short, destination, destination_short, stops, stops_dest,airline,add_infos, Start_Date, End_Date, duration, price, currancy) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                        # loop through existing values in list to check for uniqueness
+                        for value in insertValues:
+                            if value[7] == Start_Date and value[8] == End_Date:
+                                value[10] =  value[10] if price > value[10] else price
+                                # combination already exists, do something
+                                break
+                        else:
+                            # combination doesn't exist, insert the new value
+                            insertValues.append((start,startShort,destinationVar,destShort,stopss,stops_dest,airline,addDriv,Start_Date,End_Date,price,duration,"EUR"))
+                        print(insertValues[-1])
+                        #db
+                        print("--------------------------" + str(len(liste)))
+                    time.sleep(20)
+                # resultsHtml = results.get_attribute("innerHTML")
+                    #fix dates 
+                #     ('New York', 'JFK', 'London', 'LHR', 1, 'Paris', '2023-04-01', '2023-04-08', 8, 1000, 'USD', None),
+            if len(insertValues) > 0:
+                sql = "INSERT INTO flight (start, start_short, destination, destination_short, stops, stops_dest,airline,add_infos, Start_Date, End_Date,price, duration,  currancy) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
                 self.db.insertMany(sql,insertValues)
-                #sort
+            sql = "UPDATE airports SET regex3 = '"+destination+"' WHERE int_short = '"+depart+"'"
+            res =  self.db.update(sql=sql)
                 #filter out 
                 #-> DB 
                 #chatgpt map 
                 # SCRAPE AND GOGOGOGOGOOG
-                time.sleep(60)
-                time.sleep(60)
- 
+            time.sleep(60)
+        sql = "UPDATE airports SET regex3  = 'Done' WHERE int_short = '"+depart+"'"
+        res =  self.db.update(sql=sql)
+        time.sleep(36)
+    def round_last_num(self,num):
+        return round(num/10)*10
 if __name__ == "__main__":
+
     fetcher = SeleniumScraper("db")
     #fetcher.test()
-    fetcher.checkFelixoderCheckGarnix("VIE","VIE","VIE","VIE","VIE")
-    #localHosterList = db.getHoster()
-   # fetcher.check_Streamkiste("Breaking Bad", imdb="tt0903747", isMovie="/serie/", season="04",episode="04")#g
+    # while True:
+    #     try:
+    #         fetcher.skyscannerExplor()
+    #     except:
+    #         time.sleep(10)
+    #         print("Fail")
+    #localHosterList = fetcher.checkHls()
+    #fetcher.check_Streamkiste("avengers-endgame", imdb="tt4154796", isMovie="/movie/", season="04",episode="04")#g
    # fetcher.check_Bs("Das Mädchen im Schnee",season="01",episode="01",episodeName="Folge 1")#g
    # hi = fetcher.checkSTo("Breaking bad", imdb="tt0903747",  season="04",episode="04")#g
     #installUblock
-    #hi = fetcher.checkCine(movieName="1UP", imdb="tt13487922",isTestCase=False)#g
+    hi = fetcher.checkCine(movieName="1UP", imdb="tt13487922",isTestCase=False)#g
   #  hi = fetcher.checkBrowser()
    # print(hi)
    # fetcher.closeBrowser()
+
+   ##destinations > ul > li.browse-list-category.open > ul > li:nth-child(1) > div > div > div.browse-data-entry.trip-link > a.flightLink.visible > div > span
+   ##destinations > ul > li:nth-child(2) > ul > li:nth-child(1) > div > div > div.browse-data-entry.trip-link > a.flightLink.visible > div > span
+   #destinations > ul > li.browse-list-category.open > ul > li:nth-child(1) > div > div > div.browse-data-entry.trip-link > a.flightLink.visible > div > span
