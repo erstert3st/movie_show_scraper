@@ -99,7 +99,7 @@ class Database(object):
     def update(self, table="", status="", id="", sql="", error=""):
         try:
             if(len(sql) < 1):
-                sql = "UPDATE `"+table+"` SET `status` = '"+status+"' WHERE `id` = " + id  
+                sql = "UPDATE `"+table+"` SET `status` = '"+status+"' WHERE `id` = '" + str(id) +"'"  
             self.cursor.execute(sql)
             self.connect_db.commit()
             print("update commit")

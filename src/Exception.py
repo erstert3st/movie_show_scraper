@@ -1,6 +1,9 @@
 class videoBroken(Exception):
     def __str__(self):
         return "File is not online"
+class linkBroken(Exception):
+    def __str__(self):
+        return "File is not online"
 class botDetection(Exception):
     def __str__(self):
         return "bot is found"

@@ -52,7 +52,8 @@ class Main_scrapper(object):
                     except:
                         self.db.uptError(objekt[0],"cine","cine_done",table)
                 return True
-           
+            self.db.uptError(objekt[0],"scrapper","download",table)
+
            
            
            

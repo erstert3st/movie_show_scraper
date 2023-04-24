@@ -23,6 +23,8 @@ class SeleniumScraper(object):
     def __init__(self,ua="", anwesend=False,hoster=[],db=""):
         environ['LANGUAGE'] = 'en_US'
         self.url = ""
+        self.found = 0
+        self.hls_found = False 
         self.db = db if db != "" else Database() 
         self.hoster = hoster if len(hoster) > 1 else self.db.getHoster()
         self.ua = ua if len(ua) > 0 else "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.6 Safari/537.11"
@@ -273,12 +275,16 @@ class SeleniumScraper(object):
             self.get_link(self.url)
             return
     #TodoInerUrl
-    def checkHls(self,element,id,movieOrSerie,modul,curremtBestQuali=["1000","0"],curremtAltQuali=["0","0"],innerUrl=False):
-
-
+    def checkHls(self, link,  modul,curremtBestQuali=["1000","0"],curremtAltQuali=["0","0"],selectorType=By.CSS_SELECTOR ,selector="path"):
+        
+        element =  self.browser.find_elements(selectorType,selector)
+        if len(element) < 1: raise 
+        element = element[0].get_attribute("innerHTML")
         pattern = r"sources\s*=\s*{\s*'hls'\s*:\s*'(.*)',"
-        match = re.search(pattern, script_text)
-
+        match = re.search(pattern, element)
+        #not working FIX it or remove with Jdownlaoder 
+        #may dry run ?
+        #may add and 
         if match:
             hls_url = match.group(1)
             r = requests.get(hls_url)
@@ -305,7 +311,7 @@ class SeleniumScraper(object):
     def checkUrl(self,link,id,movieOrSerie,modul,curremtBestQuali=["1000","0"],curremtAltQuali=["0","0"],innerUrl=False):
             filemanager = FileManager()
             reqCode = requests.head(link).status_code
-           # if reqCode == 200: 
+            if reqCode != 200: raise linkBroken 
             quality = []
             quality.append(0)
 
@@ -486,8 +492,9 @@ class SeleniumScraper(object):
         print(sorted_elements)
         return sorted_elements
 
-    def check_Streamkiste(self,querry, imdb, isMovie="/movie/", season="", episode="" ,quali=[[0,0],[0,0]],isTestCase=False): # getLinks for no douple code 
+    def check_Streamkiste(self,querry, imdb, isMovie="/movie/", season="", episode="" ,quali=[[0,0],[0,0]],isTestCase=False,counter=0): # getLinks for no douple code 
         modul = "skiste"
+        self.found = 0 
         if(len(imdb) < 1):
             imdb = querry
         url =  "https://streamkiste.tv"
@@ -503,15 +510,29 @@ class SeleniumScraper(object):
         if isMovie == "/serie/":
             self.selectDropdown(selector=By.ID,selectorValue= "season", checkIfFound="Staffel " + season)
             self.selectDropdown(selector=By.ID,selectorValue= "episode", checkIfFound="Ep " + episode)
+            self.selectDropdown(By.ID, "rel",0)
         else:
-            self.selectDropdown(By.ID, "rel",3)
+            self.selectDropdown(By.ID, "rel",0)
          #   self.selectDropdown(By.ID, "rel",0)
 
-        hosterElementList = self.browser.find_elements(By.ID,"stream-links")
-        hosterElementList = self.sortHosterElements(hosterElementList,"stramkiste")
-        links = []
-        for hoster in hosterElementList:
+        hosterElementList = []
+        hosterDone = []
+        try:            
+            while self.found <= 2 :
+                self.selectDropdown(By.ID, "rel",counter)
+                hosterElementList = self.browser.find_elements(By.ID,"stream-links")
+                hosterElementList = self.sortHosterElements(hosterElementList,"stramkiste")
+                self.checkHoster(hosterElementList,isTestCase,modul,quali)
+                counter += 1 
+        except:
+            raise notAvailableError
+        #test without found
+        self.found = 0
 
+    
+    
+    def checkHoster(self,hosterElementList,isTestCase,modul,quali):
+        for hoster in hosterElementList:
             self.clickWait("","", 10,hoster[0])
             self.browser.execute_script("window.scrollTo(0, 0)")
             self.browser.execute_script("document.body.style.zoom='100%'")
@@ -525,7 +546,10 @@ class SeleniumScraper(object):
                 self.findVideoSrc(isTestCase,modul,quali, xy,hoster[1],hoster[2] )
             except:
                 continue
-        return
+            #here something to loop and call recorslsvy with counter 
+
+
+
     def check_Bs(self,querry,   season="", episode="",episodeName="",link="", quali=[[0,0],[0,0]],isTestCase=False):
         modul = "bs"
         linkFound = False
@@ -660,12 +684,16 @@ class SeleniumScraper(object):
                 self.findVideoSrc(isTestCase,modul,quali,nestedVideo=hoster[1], name=hoster[2])
             except:# videoBroken:
                 continue
+        self.found += 1
         return True
-
+#TodoHosterHlsViaDb
     def findVideoSrc(self,isTestCase,modul,quali,xy=[],nestedVideo=False,name =""):
         self.clickMiddle(4,xy)
         self.link = ""
-        if name.lower() == "voe":
+        name = name.lower()
+       # hostername, nestedVideo,
+        self
+        if name == "voe":
             time.sleep(10)
             tempIframe =  self.browser.find_element(By.TAG_NAME,"iframe")  
             self.link =  tempIframe.get_attribute('src')       
@@ -676,7 +704,8 @@ class SeleniumScraper(object):
             self.browser.find_elements(By.TAG_NAME,"video")
             if len(self.link) <= 0 :
                 self.findNestedVideo() 
-
+        # if video needs to open in an seperate tab 
+        if(modul == "skiste" or modul == "bs.to"): 
             if self.link != "" and self.link != []:
                 # switch to the second tab
                 self.browser.switch_to.window('tab' + str(self.run))
@@ -687,14 +716,21 @@ class SeleniumScraper(object):
  #       links.append(self.browser.current_url)
         if isTestCase : return self.browser.current_url 
             #do som in 2 tab 
-        self.checkHls(self.browser.current_url ,modul,quali[0],quali[1],True)
-        self.checkUrl(self.browser.current_url ,modul,quali[0],quali[1],True)
-
+        try:
+            if(name in ["voe", "upstream"]):
+                self.checkHls(self.browser.current_url,modul,quali[0],quali[1],selector="body > div:nth-child(2) > script:nth-child(12)")
+            else:
+                self.checkUrl(self.browser.current_url,modul,quali[0],quali[1],True)
+            tempList = [element for element in self.hoster if 'voe' not in element[0]]
+            self.hoster = tempList
+        except:
+            return False
         # close the second tab
         #self.browser.close()
         # switch back to the first tab
         self.browser.switch_to.window(self.browser.window_handles[0])
-
+        self.hoster.remove(name)
+        return True
     
     
     def downloadFlac(self,fileName=""):  
@@ -721,7 +757,7 @@ class SeleniumScraper(object):
     
     def inputText(self,text,selectorType=By.CSS_SELECTOR,selector="sel",dropdown=-1):
         inputElement = self.browser.find_element(selectorType,selector)
-        #inputElement.send_keys(Keys.RETURN)
+        #inputElement.send_keys(Keys.RETURN) 
         inputElement.send_keys(text)
         if(dropdown > -1):
             inputElement.send_keys(Keys.ARROW_DOWN) 
@@ -933,11 +969,11 @@ if __name__ == "__main__":
     #         time.sleep(10)
     #         print("Fail")
     #localHosterList = fetcher.checkHls()
-    #fetcher.check_Streamkiste("avengers-endgame", imdb="tt4154796", isMovie="/movie/", season="04",episode="04")#g
+    fetcher.check_Streamkiste("avengers-endgame", imdb="tt2250912", isMovie="/movie/", season="04",episode="04")#g
    # fetcher.check_Bs("Das Mädchen im Schnee",season="01",episode="01",episodeName="Folge 1")#g
    # hi = fetcher.checkSTo("Breaking bad", imdb="tt0903747",  season="04",episode="04")#g
     #installUblock
-    hi = fetcher.checkCine(movieName="1UP", imdb="tt13487922",isTestCase=False)#g
+    hi = fetcher.checkCine(movieName="1UP", imdb="tt2250912",isTestCase=False)#g
   #  hi = fetcher.checkBrowser()
    # print(hi)
    # fetcher.closeBrowser()
