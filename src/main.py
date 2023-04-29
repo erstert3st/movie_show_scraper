@@ -5,6 +5,9 @@ from SeleniumScraper import SeleniumScraper
 from  Exception import *
 from fake_useragent import UserAgent
 ##
+import debugpy
+
+
 import time
 import command 
 import schedule
@@ -14,9 +17,25 @@ from main_scrapper import  Main_scrapper
 class main(object):
     
     def main(self):
+          #
+           
+        debugpy.listen(("0.0.0.0", 5678))
+        print("Waiting for client to attach...")
+        debugpy.wait_for_client()
+        debugpy.breakpoint() #must have
+        print('break on this line')
+        print(" client  attached")  
+        print(" client  attached")
+        print(" client  attached")
+        print(" client  attached")
+        print(" client  attached")
+           
             #
         self.getVideoLinks()
         #
+
+
+        ##
         schedule.every(4).minutes.do(self.getVideoLinks())
         schedule.every(100).hours.do(self.notifyJdownloader())
         schedule.every().day.at("00:00").do(self.downloadBetterMp3())
@@ -50,10 +69,10 @@ class main(object):
 
         for file in fileList:
             filenaming, ext = os.path.splitext(file[2])
-            pid = api.addLinkToJD(link=file[5],filename=filenaming + "-good"+ ext,path=file[1])
+            pid = api.addLinkToJD(link=file[5],filename=filenaming + " - 1080p "+ ext,path=file[1])
            # pid = api.addLinkToJD(self,filename=filenaming + "-good"+ ext, FolderPath=file[1],name="test")             
             if len(file[5]) > 1:
-                pid2 = api.addLinkToJD(link=file[5],filename=filenaming + "_alternative"+ ext,path=file[1])   #first_folder = path.split('/')[1]             
+                pid2 = api.addLinkToJD(link=file[5],filename=filenaming + " - 720p "+ ext,path=file[1])   #first_folder = path.split('/')[1]             
             table = "MovieRequests" if file[3] == 1 else "EpisodeRequests"
             sql = "UPDATE `"+table+"` SET `Dow_Status` = 'start_download' WHERE `id` = '" + str(id) +"'"  
             db.update(sql)
@@ -73,7 +92,7 @@ class main(object):
 
 if __name__ == "__main__":
     hi = main()
-    hi.notifyJdownloader()
+    hi.main()
         #Todo : May Status in api and download done ? 
         # pip install mysql-connector-python
         # sudo apt-get install libmariadb3 libmariadb-dev

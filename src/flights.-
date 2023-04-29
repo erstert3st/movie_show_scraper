@@ -1,0 +1,242 @@
+import requests
+
+url = "https://skyscanner50.p.rapidapi.com/api/v1/searchFlightEverywhereDetails"
+
+querystring = {"origin":"LOND","CountryId":"US","anytime":"true","oneWay":"true","currency":"EUR","countryCode":"US","market":"en-US"}
+
+headers = {
+"X-RapidAPI-Key": "22408fc45bmsh753eabf966f3a11p1b7fc4jsne32992c3e5ee",
+"X-RapidAPI-Host": "skyscanner50.p.rapidapi.com"
+}
+
+response = requests.request("GET", url, headers=headers, params=querystring)
+
+print(response.text)
+
+###
+    
+    
+    def downloadFlac(self,fileName=""):  
+            modul  = "musicDownloader"
+         #   fileName ="01 - Nirvana - Rape Me.mp3"  
+            fileName =  os.path.splitext(fileName)[0]
+            playlistPattern = r"^\d{2,3}\s-"
+
+            if re.search(playlistPattern, fileName):
+               fileName = re.sub(playlistPattern, "", fileName, count=1)
+            self.open_Chrome("https://free-mp3-download.net/" ,3,downloader=True)
+            self.searchAndClick(search= "q", selector=By.ID, querry=fileName,button="snd")
+            #loop and check may add loop first child 
+            self.clickWait(By.CSS_SELECTOR,"#results_t > tr:nth-child(1) > td:nth-child(3) > a > button",10) 
+            self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")      
+            captchaChecka =  self.browser.find_elements(By.ID,"captcha") 
+            if len(captcha) > 0: 
+                self.clickWait(element=captcha,timer=5)
+                self.captchaCheck(By.TAG_NAME,"iframe")
+                
+            self.clickWait(By.CSS_SELECTOR,"body > main > div > div > div > div > div.card-action > button",7)
+            time.sleep(120)
+            return True
+    
+    def inputText(self,text,selectorType=By.CSS_SELECTOR,selector="sel",dropdown=-1):
+        inputElement = self.browser.find_element(selectorType,selector)
+        #inputElement.send_keys(Keys.RETURN) 
+        inputElement.send_keys(text)
+        if(dropdown > -1):
+            inputElement.send_keys(Keys.ARROW_DOWN) 
+            time.sleep(1)
+            inputElement.send_keys(Keys.ENTER) 
+        time.sleep(1)
+
+    def freshBrowser(self):
+        self.browser.close()
+        del self.browser
+        self.open_Chrome("https://www.skyscanner.net/" ,2)
+
+    def skyscannerExplor(self):
+        self.open_Chrome("https://www.skyscanner.net/" ,2)
+
+        laender = ["it","ro","es","uk","nl","ie","tr","ch","gr","tk"]
+        start_date_str = '2023-03-22'
+        end_date_str = '2023-03-30'
+        directFlights = "false"
+        max_price = 22
+        # convert the start and end dates to datetime objects
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+        # create list of dates between dates 
+        date_list = [date.strftime('%y%m%d') for date in (start_date + timedelta(n) for n in range((end_date - start_date).days + 1))]
+
+        for land in laender:
+            for dat in date_list:
+                #url =   "https://www.skyscanner.net/transport/flights-from/"+land+"/"+dat+"/?adultsv2=1&cabinclass=economy&childrenv2=&ref=home&is_banana_refferal=true&rtn=0&preferdirects="+directFlights+"&outboundaltsenabled=false&inboundaltsenabled=false"
+                url =  "https://www.skyscanner.net/transport/flights-from/"+land+"/"+dat+"/?adults=1&adultsv2=1&cabinclass=economy&children=0&childrenv2=&inboundaltsenabled=false&infants=0&outboundaltsenabled=false&preferdirects=false&ref=home&rtn=0"
+
+                self.getWaitUrl(url,random.randint(3,5))
+                counter = 1
+                price = self.browser.find_element(By.CSS_SELECTOR,"#destinations > ul > li:nth-child(1) > a > div > p")
+                while int(price.text[6:]) < max_price:
+                    checker = True
+                    price = self.browser.find_element(By.CSS_SELECTOR,"#destinations > ul > li:nth-child("+str(counter)+") > a > div")
+                    sub_counter = 1
+                    country = self.browser.find_element(By.CSS_SELECTOR,"#destinations > ul > li:nth-child(1) > a > div > h3")                    
+                    while checker is True:
+                        #open window
+                        self.clickWait(By.CSS_SELECTOR,"#destinations > ul > li:nth-child("+str(counter)+") > a > div > div > svg",3)
+                        
+                        sub_price = self.browser.find_element(By.CSS_SELECTOR,"#destinations > ul > li.browse-list-category.open > ul > li:nth-child("+str(counter)+") > div > div > div.browse-data-entry.trip-link > a.flightLink.visible > div > span").text[6:]
+                        city =  self.browser.find_element(By.CSS_SELECTOR,"#destinations > ul > li.browse-list-category.open > ul > li:nth-child("+str(sub_counter)+") > div > div > div.browse-data-entry.trip-link > h3").text
+                        direct = self.browser.find_element(By.CSS_SELECTOR,"#destinations > ul > li.browse-list-category.open > ul > li:nth-child("+str(sub_counter)+") > div > div > div.browse-data-entry.trip-link > p").text
+                        hrf = self.browser.find_element(By.CSS_SELECTOR,"#destinations > ul > li.browse-list-category.open > ul > li:nth-child("+str(sub_counter)+") > div > div > div.browse-data-entry.trip-link > a.flightLink.visible").get_attribute('href')
+                        time.sleep(random.randint(1,3))
+                        #close window
+                        self.clickWait(By.CSS_SELECTOR,"#destinations > ul > li:nth-child("+str(counter)+") > a > div > div > svg",random.randint(2,4))
+                        if int(sub_price) > max_price : checker = False
+                        sub_counter +=1
+                        #insert DB
+                    
+                    #close sub window
+                    self.clickWait(By.CSS_SELECTOR,"#flights-search-summary-root > div > section > div.App_searchDetailsNudgerContainer__N2NmM > nav > div > button:nth-child(3)",random.randint(2,4))
+                    counter +=1
+                
+                # open  
+                # get data
+                # get innerdata
+                # db update
+                # insert
+                # update if exist 
+            self.freshBrowser()
+            
+            log_file = open('my_log_file.txt', 'a')
+            log_file.write(land + " done "  + '\n')
+    
+    def checkFelixoderCheckGarnix(self,start,ziel,startDate,endDate,stops,):  
+        import datetime
+        sql = "SELECT int_short,regex3  FROM airports WHERE search_A = 1 ORDER BY int_short ASC"
+        startPort = self.db.select(my_query=sql, returnOnlyOne=True)
+        sqlSearch = "SELECT int_short FROM airports WHERE  search_B = 1 ORDER BY int_short ASC"
+        searchPorts = self.db.select(my_query=sqlSearch,clean=True)
+
+        if startPort[1] != None and [1] != "" :
+            index = searchPorts.index(startPort[1])
+            searchPorts = searchPorts[index +1:]
+        #stops = "-2"
+        depart = startPort[0]
+        destinations = searchPorts
+        dates = ['2023-03-13', '2023-03-20','2023-03-27'] #Todo Dynamic!!! 
+       # dates = ['2023-03-27'] #Todo Dynamic!!! 
+        max_price = 37
+        self.open_Chrome("https://www.kayak.de/" ,3)
+        #stops = ['0','1','-2'] 
+        stops = ['0'] 
+
+
+
+        for destination in searchPorts:
+            insertValues = []
+            for date in dates:                                                                         #price_a #bestflight_a
+                for stop in stops:
+                    url = f'https://www.kayak.de/flights/{depart}-{destination}/{date}-flexible-3days?sort=price_a&fs=price=-{max_price};stops={stop}'        
+                    
+                    self.getWaitUrl(url,22)
+                    
+                    results = self.browser.find_element(By.CLASS_NAME ,"resultsContainer")
+                    resultsText = results.text
+                    liste = resultsText.split("€\n")
+
+                # pattern = r"\d{2}\.\d{2}\.[^\n]*€\n"
+                    #'Interessierst du dich auch für Flug- + Buspreise?\nWeite deine Suche auch auf Busverbindungen aus.\nMehr anzeigen\nFlug + Bus\n15.03.\n9:20–19:19\nVIEWien\n-\nAMSSloterdijk\n1 Stopp\nCRL-BRU\n9:59 Std.\nRyanair, BlaBlaBus\n0\n0\n51 €\nStandard\nCombigo\nZum Angebot\n15.03.\n6:05–22:20\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW\n16:15 Std.\nWizz Air, easyJet\n0\n0\n70 €\nEconomy\nKiwi.com\nZum Angebot\nInteressierst du dich auch für Flug- + Zugpreise?\nFinde weitere Reisemöglichkeiten mit Zugverbindungen.\nMehr anzeigen\nFlug + Zug\n15.03.\n9:20–17:25\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nCRL-BRU\n8:05 Std.\nRyanair, Thalys\n0\n0\n71 €\nStandard\nCombigo\nZum Angebot\n15.03.\n6:05–22:05\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW-LTN\n16:00 Std.\nWizz Air, easyJet\n0\n0\n71 €\nEconomy\nKiwi.com\nZum Angebot\n15.03.\n6:05–18:50\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW\n12:45 Std.\nWizz Air, easyJet\n72 €\nKiwi.com\n0\n0\n72 €\nEconomy\nKiwi.com\nZum Angebot\n14.03.\n6:25–20:35\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW-LTN\n14:10 Std.\nWizz Air, easyJet\n0\n0\n75 €\nEconomy\nKiwi.com\nZum Angebot\n15.03.\n6:05–20:35\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW-LTN\n14:30 Std.\nWizz Air, easyJet\n76 €\nKiwi.com\n0\n0\n76 €\nEconomy\nKiwi.com\nZum Angebot\n15.03.\n6:05–20:40\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW\n14:35 Std.\nWizz Air, easyJet\n77 €\nKiwi.com\n0\n0\n77 €\nEconomy\nKiwi.com\nZum Angebot\n14.03.\n6:25–17:15\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW\n10:50 Std.\nWizz Air, easyJet\n0\n0\n81 €\nEconomy\nKiwi.com\nZum Angebot\n15.03.\n6:45–13:35\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nMXP\n6:50 Std.\nRyanair, easyJet\n0\n0\n84 €\nStandard\nKiwi.com\nZum Angebot\n15.03.\n6:05–17:25\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW-LTN\n11:20 Std.\nWizz Air, easyJet\n86 €\nKiwi.com\n0\n0\n86 €\nEconomy\nKiwi.com\nZum Angebot\n14.03.\n6:25–18:50\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW\n12:25 Std.\nWizz Air, easyJet\n0\n0\n88 €\nEconomy\nKiwi.com\nZum Angebot\n14.03.\n6:25–17:20\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nLGW-LTN\n10:55 Std.\nWizz Air, easyJet\n0\n0\n92 €\nEconomy\nKiwi.com\nZum Angebot\n15.03.\n21:10–17:25+1\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nSTN\n20:15 Std.\nRyanair, easyJet\n0\n0\n92 €\nStandard\nKiwi.com\nZum Angebot\n15.03.\n21:10–9:00+1\nVIEWien\n-\nAMSAmsterdam\n1 Stopp\nSTN-LTN\n11:50 Std.\nRyanair, easyJet\n0\n0\n93 €\nStandard\nKiwi.com\nZum Angebot'
+                    regex = r'\d{2}\.\d{2}\.'
+                    matched_strings = []
+                    for text in liste:
+                            match = re.search(regex, text)
+                            if match:
+                                start = 0 if match.end() < 6 else text[:match.end() - 7].rfind("\n") + 1
+                    #            start = 0 if match.end() < 6 else text[:match.end() - 7].rfind("<br>") + 4
+                                alt = text[start:match.end() - 7]
+                                alt = alt if alt != "Zum Angebot" else ""
+                                matched_strings.append([alt,text[match.end() - 6:]])
+                            # matched_strings.append([text[match.end() - 6:],text[start:match.end() - 6]])
+                    insertValues = []
+                    for ele in matched_strings:
+                        liste = ele[1].split('\n')
+                        price = int(liste[-1])
+                        if  price > max_price: continue
+                        liste.pop(3)
+                        if len(liste) > 10 :
+                            liste.pop(len(liste) -2)
+                            liste.pop(len(liste) -2)
+                        if liste[-2] == "Werbung": liste.pop(len(liste) -1)
+                        if len(liste) >= 9:
+                            print("no direct flight")
+
+                        # parse the date and time from the input string
+                        date_str, time_str = liste[0]+"2023", liste[1].split('–')
+                        start_time_str, end_time_str = time_str[0], time_str[1]
+                        nextDay=0
+                        try:
+                           var = int(end_time_str.split(':')[1])
+                        except:
+                           # var =  end_time_str.split(':')
+                            plus =  end_time_str.split('+')
+                            nextDay=int(plus[1])
+                            end_time_str =  plus[0]
+                        start_time = datetime.datetime.strptime(f"{date_str}{start_time_str}", '%d.%m.%Y%H:%M')
+                        #if start_time_str
+                        end_time = datetime.datetime.strptime(f"{date_str}{end_time_str}", '%d.%m.%Y%H:%M')
+                        if nextDay > 0:
+                            end_time =  end_time + datetime.timedelta(hours=24 * nextDay)
+                        # format the datetime objects as strings in the MySQL format
+                        start_time_mysql = start_time.strftime('%Y-%m-%d %H:%M:%S')
+                        end_time_mysql = end_time.strftime('%Y-%m-%d %H:%M:%S')
+                        duration = end_time - start_time
+
+                        # convert the duration to hours
+                        duration_hours = duration.total_seconds() / 3600
+
+                        print(f"Duration: {duration_hours:.2f} hours")
+
+                        start  =liste[2][3:]
+                        startShort  =liste[2][:3]
+                        destinationVar = liste[3][3:]
+                        destShort = liste[3][:3]
+                        stopss = 0 if liste[4] =='Nonstop' else int(liste[4][:2])
+                        NonSop = 0 if stopss < 1 else 1 
+                        stops_dest = "" if stopss < 1 else liste[5]
+                        Start_Date = start_time_mysql
+                        End_Date  = end_time_mysql
+                        duration =  liste[5 + NonSop]
+                        airline =  duration_hours
+                        addDriv = ele[0]
+
+                        # loop through existing values in list to check for uniqueness
+                        for value in insertValues:
+                            if value[7] == Start_Date and value[8] == End_Date:
+                                value[10] =  value[10] if price > value[10] else price
+                                # combination already exists, do something
+                                break
+                        else:
+                            # combination doesn't exist, insert the new value
+                            insertValues.append((start,startShort,destinationVar,destShort,stopss,stops_dest,airline,addDriv,Start_Date,End_Date,price,duration,"EUR"))
+                        print(insertValues[-1])
+                        #db
+                        print("--------------------------" + str(len(liste)))
+                    time.sleep(20)
+                # resultsHtml = results.get_attribute("innerHTML")
+                    #fix dates 
+                #     ('New York', 'JFK', 'London', 'LHR', 1, 'Paris', '2023-04-01', '2023-04-08', 8, 1000, 'USD', None),
+            if len(insertValues) > 0:
+                sql = "INSERT INTO flight (start, start_short, destination, destination_short, stops, stops_dest,airline,add_infos, Start_Date, End_Date,price, duration,  currancy) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                self.db.insertMany(sql,insertValues)
+            sql = "UPDATE airports SET regex3 = '"+destination+"' WHERE int_short = '"+depart+"'"
+            res =  self.db.update(sql=sql)
+                #filter out 
+                #-> DB 
+                #chatgpt map 
+                # SCRAPE AND GOGOGOGOGOOG
+            time.sleep(60)
+        sql = "UPDATE airports SET regex3  = 'Done' WHERE int_short = '"+depart+"'"
+        res =  self.db.update(sql=sql)
+        time.sleep(36)
+    def round_last_num(self,num):
+        return round(num/10)*10

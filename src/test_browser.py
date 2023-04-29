@@ -5,7 +5,7 @@ import requests
 from SeleniumScraper import SeleniumScraper
 import socket
 from selenium import webdriver
-import undetected_chromedriver.v2 as uc
+import undetected_chromedriver as uc
 import os 
 import time
 

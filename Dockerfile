@@ -48,7 +48,8 @@ RUN ls
 RUN ./run.sh || true
 
 #CMD ["python", "-m", "debugpy", "--listen", "localhost:5678",  "--wait-for-client", "SeleniumScraper.py"]
-CMD ["python", "-m", "debugpy", "--listen", "localhost:5678",  "--wait-for-client", "SeleniumScraper.py"]
+#CMD ["python", "-m", "debugpy", "--listen", "localhost:5678",  "--wait-for-client", "start.py"]
+CMD ["python",  "main.py"]
 #python -m debugpy --listen localhost:5678  --wait-for-client SeleniumScraper.py
 #CMD ["ping", "1.1.1.1"]
 #CMD ["/bin/bash", "-c", "./run.sh"]
