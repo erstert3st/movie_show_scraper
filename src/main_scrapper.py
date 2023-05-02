@@ -19,36 +19,35 @@ class Main_scrapper(object):
         movieBool = True if objekt[1] == 1 else False
         isMovie = "/movie/" if movieBool else "/serie/"
         table = "MovieRequests" if movieBool else "EpisodeRequests"
-        isMovie = ""  
+        #isMovie = ""  
         imdb=objekt[8]
         name=objekt[4]
         season=objekt[5]
         episode=objekt[6]
-        quali=[objekt[24],objekt[26]]
         episodeName= objekt[10]
-
+        id=objekt[0] 
         try:
             try:
-                if status == "new" or "skiste" :SeleniumScraper().check_Streamkiste(movieName=name,imdb=imdb, isMovie=isMovie, season=season,episode=episode,quali=quali)
+                if status == "new" or "skiste" :SeleniumScraper(id).check_Streamkiste(movieName=name,imdb=imdb, isMovie=isMovie, season=season,episode=episode)
             
             except searchError or notAvailableError:   
                 print(" #status streamkiste done AND Loggen")
         
             except: # second try
                 try:
-                    SeleniumScraper().check_Streamkiste(name,imdb, isMovie, season,episode,quali)
+                    SeleniumScraper(id).check_Streamkiste(name,imdb, isMovie, season,episode)
                 except:
                     self.db.uptError(objekt[0],"sKiste","skiste_done",table)
                 
 
             if movieBool:
                 try:
-                    if status == "skiste" or "cine" : SeleniumScraper().checkCine(name,imdb,quali)
+                    if status == "skiste" or "cine" : SeleniumScraper(id).checkCine(name,imdb)
                 except searchError or notAvailableError:    
                     print("s")
                 except:
                     try:
-                        SeleniumScraper().checkCine(name,imdb,quali)
+                        SeleniumScraper(id).checkCine(name,imdb)
                     except:
                         self.db.uptError(objekt[0],"cine","cine_done",table)
                 return True
@@ -59,12 +58,12 @@ class Main_scrapper(object):
            
            
             try:
-                if status == "skiste" or "bs": SeleniumScraper().check_Bs(name,season,episode,episodeName,link,quali)
+                if status == "skiste" or "bs": SeleniumScraper().check_Bs(name,season,episode,episodeName,link)
             except searchError or notAvailableError:    
                 print(" #status bs done AND Loggen")
             except:
                 try:
-                    SeleniumScraper().check_Bs(name,season,episode,episodeName,link,quali)
+                    SeleniumScraper().check_Bs(name,season,episode,episodeName,link)
                 except:
                     self.db.uptError(objekt[0],"bs","bs_done",table)
             
@@ -73,12 +72,12 @@ class Main_scrapper(object):
 
 
             try:    
-                if status == "bs_done" or "s.to": SeleniumScraper().checkSTo(name, imdb,season,episode,quali)
+                if status == "bs_done" or "s.to": SeleniumScraper().checkSTo(name, imdb,season,episode)
             except searchError or notAvailableError:    
                 print(" #status bs done AND Loggen")
             except:
                 try:
-                    SeleniumScraper().checkSTo(name, imdb,season,episode,quali)
+                    SeleniumScraper().checkSTo(name, imdb,season,episode)
                 except:
                     self.db.uptError(objekt[0],"s.To","s.to_done",table)
         

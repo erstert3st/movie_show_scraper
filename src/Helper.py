@@ -11,6 +11,7 @@ from Exception import *
 class FileManager(object):
     
     def checkVideoSize(self, videoLink):
+        #Todo, Test with Vidoza
         fileData = "noIdea" 
         size = 0
         scraper = cloudscraper.create_scraper()
@@ -21,7 +22,6 @@ class FileManager(object):
             #
             #
             metaData = ffmpeg.probe(videoLink)
-            width =","+ str(metaData["streams"][0]['width'])+"," + str(metaData["streams"][0]['height'])
             #height = str(metaData["streams"][0]['height'])
             size = int(metaData["format"]['size'])            
         except:
@@ -33,8 +33,8 @@ class FileManager(object):
                 raise botDetection
 
         if size == 0: raise videoBroken 
-        sizeMB =  str(int(int(size)/1048576)) # second int remove decimal 
-        fileData = str(sizeMB) +  width  #fix width  
+        sizeMB =  int(int(size)/1048576) # second int remove decimal 
+        fileData = [metaData["streams"][0]['high'] , metaData["streams"][0]['width'] , sizeMB ]
         return fileData
 
     def checkValidvideo(self,path,db,table,id):

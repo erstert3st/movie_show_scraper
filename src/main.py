@@ -7,6 +7,7 @@ from fake_useragent import UserAgent
 ##
 import debugpy
 
+import threading
 
 import time
 import command 
@@ -21,9 +22,9 @@ class main(object):
            
         debugpy.listen(("0.0.0.0", 5678))
         print("Waiting for client to attach...")
-        debugpy.wait_for_client()
-        debugpy.breakpoint() #must have
-        print('break on this line')
+       # debugpy.wait_for_client()
+       # debugpy.breakpoint() #must have
+#        print('break on this line')
         print(" client  attached")  
         print(" client  attached")
         print(" client  attached")
@@ -41,21 +42,35 @@ class main(object):
         schedule.every().day.at("00:00").do(self.downloadBetterMp3())
         schedule.every().day.at("00:00").do(self.checkVideo())
         
-      
+    def waitCheckThread(self,thread,timeout=300):
+        while thread.is_alive() and timeout > 0:
+            thread.join(1)
+            timeout -= 1 
+    def isStatus(self,id,status):
+        db = Database()        
+        return db.select(table="SELECT CASE WHEN Dow_Status = '"+status+"' THEN TRUE ELSE FALSE END AS my_boolean FROM MovieRequests Where id =" + id) is True
+
     def getVideoLinks(self):
         db = Database()        
-        waiting_Videos = db.select(table="WorkToDo" ,where="isMovie = '1' and Dow_Status IS NULL")
+        waiting_Videos = db.select(table="WorkToDo" ,where="isMovie = '1' and Dow_Status IS NULL ORDER BY RAND()")
      #   waiting_Videos = db.select(table="WorkToDo" ,where="isMovie = '0'")
         api = Api()
         downloader = Main_scrapper(db)
         newLinksFound = False
 
         for counter, video in enumerate(waiting_Videos):
-            if downloader.scrapperWithException(video) == True:
-                newLinksFound = True
-            time.sleep(35)
-            if counter % 5 ==0:
-                self.notifyJdownloader()
+            #Todo remove for Serie
+            downloader.scrapperWithException(video)
+            # scrapperThread = threading.Thread(target= downloader.scrapperWithException(video)) # start movie if it takes to long 
+            # scrapperThread.setName("scrapperThread")
+            # scrapperThread.start()
+            # # wait for 5 minutes or until the thread has finished
+            # self.waitCheckThread(scrapperThread)
+            # if downloader.scrapperWithException(video) == True:
+            #     newLinksFound = True
+            # time.sleep(35)
+            # if counter % 5 ==0:
+            #     self.notifyJdownloader()
 
         if newLinksFound: self.notifyJdownloader()
     def downloadBetterMp3(self):
@@ -69,10 +84,10 @@ class main(object):
 
         for file in fileList:
             filenaming, ext = os.path.splitext(file[2])
-            pid = api.addLinkToJD(link=file[5],filename=filenaming + " - 1080p "+ ext,path=file[1])
+            pid = api.addLinkToJD(link=file[5],filename=filenaming + " - 1440p "+ ext,path=file[1])
            # pid = api.addLinkToJD(self,filename=filenaming + "-good"+ ext, FolderPath=file[1],name="test")             
             if len(file[5]) > 1:
-                pid2 = api.addLinkToJD(link=file[5],filename=filenaming + " - 720p "+ ext,path=file[1])   #first_folder = path.split('/')[1]             
+                pid2 = api.addLinkToJD(link=file[5],filename=filenaming + " - 1080p "+ ext,path=file[1])   #first_folder = path.split('/')[1]             
             table = "MovieRequests" if file[3] == 1 else "EpisodeRequests"
             sql = "UPDATE `"+table+"` SET `Dow_Status` = 'start_download' WHERE `id` = '" + str(id) +"'"  
             db.update(sql)
@@ -92,7 +107,7 @@ class main(object):
 
 if __name__ == "__main__":
     hi = main()
-    hi.main()
+    hi.getVideoLinks()
         #Todo : May Status in api and download done ? 
         # pip install mysql-connector-python
         # sudo apt-get install libmariadb3 libmariadb-dev

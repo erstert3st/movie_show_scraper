@@ -6,6 +6,7 @@ import requests
 import command
 import undetected_chromedriver as uc
 #import m3u8
+import threading
 
 from selenium.webdriver.common.keys import Keys
 from Exception import *
@@ -20,7 +21,7 @@ from xvfbwrapper import Xvfb
 from datetime import datetime, timedelta
 
 class SeleniumScraper(object):
-    def __init__(self,ua="", anwesend=False,hoster=[],db=""):
+    def __init__(self,id= "",ua="", anwesend=False,hoster=[],db=""):
         environ['LANGUAGE'] = 'en_US'
         self.url = ""
         self.found = 0
@@ -29,8 +30,9 @@ class SeleniumScraper(object):
         self.hoster = hoster if len(hoster) > 1 else self.db.getHoster()
         self.ua = ua if len(ua) > 0 else "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.6 Safari/537.11"
         self.found = {"720p": False, "1080p": False, "altLink": False}#my_dict.update({"b":True})
-        self.xy=[self.round_last_num(random.randint(1450,1550)) ,self.round_last_num(random.randint(800,860))]
+        self.xy=[round(random.randint(1450,1550),-1) , round(random.randint(800,860),-1)]
         self.run = 0
+        self.id = str(id) 
         if len(ua) > 1:
             self.ua = ua
         
@@ -115,7 +117,7 @@ class SeleniumScraper(object):
        #     print("error by bypass restore notif")
 
     def getChromeData(self,userDir="",skipRemoveError=False,downloader=False):
-        self.url, self.Browser, self.title = "","",""
+        self.url, self.title = "",""
         if os.getenv("CHROME_USR_DIR") is not None:
              vdisplay = Xvfb(width= self.xy[0], height= self.xy[1], colordepth=16)
            #  vdisplay = Xvfb(width=1500, height=730, colordepth=16)
@@ -170,6 +172,44 @@ class SeleniumScraper(object):
             self.browser.quit()
         print("close")
     
+    def functionWithTimout2(self, function,timeout=300):
+        result = None
+        stop_event = threading.Event()
+
+        def target():
+            nonlocal result
+            for i in range(10):
+                if stop_event.is_set():
+                    return
+                time.sleep(1)
+            result = function()
+    
+        thread = threading.Thread(target=target)
+        thread.start()
+        self.waitCheckThread(thread,10) # Wait for 5 minutes (300 seconds)
+
+        if thread.is_alive():
+            stop_event.set()  # Signal the thread to stop running
+            thread.join()  # Wait for the thread to exit
+            raise Exception("Function timed out")
+        else:
+            return result
+
+    def functionWithTimout(self, function,timeout=300):
+        scrapperThread = threading.Thread(target=function) # start movie if it takes to long 
+        scrapperThread.setName("scrapperThreadTimeoutFunction")
+        scrapperThread.start()
+        # wait for 5 minutes or until the thread has finished
+        self.waitCheckThread(scrapperThread,timeout)
+        if scrapperThread.is_alive():
+            scrapperThread._running = False  # Stop the thread
+            raise Exception("Function timed out")
+
+
+    def waitCheckThread(self,thread,timeout=300):
+        while thread.is_alive() and timeout > 0:
+            thread.join(1)
+            timeout -= 1 
     def checkSwitchTab(self):
         # Get the list of open window handles
         window_handles = self.browser.window_handles
@@ -178,10 +218,11 @@ class SeleniumScraper(object):
             self.browser.switch_to.window(result[0])
         time.sleep(5)
 
-    def clickWait(self,selectorType=By.CSS_SELECTOR,selector="sel",timer=5,element=""): # add ad waiter
+    def clickWait(self,selectorType=By.CSS_SELECTOR,selector="sel",timer=5,element="",howOften=1): # add ad waiter
         if type(element) == str:
             element= self.browser.find_element(selectorType,selector)
-        element.click()
+        for counter in range(0,howOften):
+            element.click()
         time.sleep(timer)
     
     def getWaitUrl(self,url,timer=3): # add ad waiter
@@ -276,14 +317,36 @@ class SeleniumScraper(object):
             return
     #TodoInerUrl
     def checkHls(self, link,modul,selectorType=By.CSS_SELECTOR ,selector="path"):
+        # check if the video is loaded
+        bodys =  self.browser.find_elements(By.CSS_SELECTOR,"body") 
+        videos =  self.browser.find_elements(By.TAG_NAME,"video") 
+        if len(videos) < 1 or len(bodys) < 1:
+            raise searchError 
+
+        video = videos[0]
+        for iterator in range(1,5):
+            if video.get_attribute('readyState') == '0': self.clickWait(element=bodys[0],howOften=2)
+
         
-        status= modul +"_done" 
-        table="movierequest" if  self.isMovie is True  else "episoderequest" 
+        if video.get_attribute('readyState') == '4':
+            print('Video is loaded')
+            # get the video height
+            height = self.browser.execute_script('return arguments[0].videoHeight;', video)
+            width = self.browser.execute_script('return arguments[0].videoWidth;', video)
+            table="MovieRequests" if  self.isMovie is True  else "EpisodeRequests"             
+            self.InsertLink(link,modul,table,height,width,hsl=True)
+
+        else:
+            print('Video is not loaded')
+            raise linkBroken
+        #if better 
+        # status= modul +"_done" 
+        # table="MovieRequests" if  self.isMovie is True  else "EpisodeRequests" 
         
-        sql = "UPDATE `"+table+"` SET `Hls_Link` = '"+link+"', `Dow_Status` = '"+status+"'  WHERE `id` = "  + id
+        # sql = "UPDATE `"+table+"` SET `Hls_Link` = '"+link+"', `Dow_Status` = '"+status+"'  WHERE `id` = "  + id
         
-        self.db.update(sql = sql)
-        self.db.insertLog(modul,text="checkUrl: " + link, lvl="2" ,info="reqCode")
+        # self.db.update(sql = sql)
+        # self.db.insertLog(modul,text="checkUrl: " + link, lvl="2" ,info="reqCode")
 
         """
         element =  self.browser.find_elements(selectorType,selector)
@@ -316,33 +379,92 @@ class SeleniumScraper(object):
             print("Value of 'sources.hls' not found in the script")    
 
     """
+    def splitQuali(self,quali):#
+            if quali is None:
+                return {"height":0,"width":0,"size":0,"sum":(0 + 0) }
+            temp_quali=  quali.split(",")
+            height = temp_quali[0]
+            width = temp_quali[1]
+            size =temp_quali[2]
+            quali = {"height":height,"width":width,"size":size,"sum":(width + height) }
+            print(quali)
+            return quali
+        #    print("found link: " + link)
     
+    def InsertLink(self,newlink,modul,table,height,width,size=1,hsl=False):
+        #QualiCheck TODO:
+        currentBestQualiSelect = self.db.getCurrentBestQuali(self.id,table)
+        currentBestQuali = self.splitQuali(currentBestQualiSelect[0])
+        Link = Link_Quali = Hls_Link = Alt_Link = Alt_Link_Quali = None 
+        updateList=[]
+        downloadFirstFound = False
+        #if Hsl
+        if hsl is True and currentBestQualiSelect[3] is None :
+            updateList.append("Hls_Link = '"+newlink+"' ,")
+            #Todo: add size
+
+        
+       
+        if currentBestQuali['height'] == 0:
+            #wenn erster link 
+            print("bestQuali")
+            Link = newlink
+            Link_Quali = f"{height},{width},{size}"
+            updateList.append("Link = '"+Link+"', Link_Quali = '"+Link_Quali+"' , Info = '"+Link+"' ,")
+            downloadFirstFound=True
+        else:
+            # check if link is better than old one        
+            currentAltQuali = self.splitQuali(currentBestQualiSelect[1])            
+            newQualiSum = height + width
+            #if neu  mehr pixel als bestes jetzige  
+            if newQualiSum >= currentBestQuali['sum']:
+                #wenn gleichoder mehr pixel     /            
+                if  newQualiSum > currentBestQuali['sum'] or \
+                    newQualiSum == currentBestQuali['sum'] and hsl is False and size > currentBestQuali['size']:                    
+                    #wenn mehr pixel oder gleichvielPixel aber mehr size = update new link and set oldlink to alternative
+                    Link = newlink
+                    Link_Quali = f"{height},{width},{size}"
+                    Alt_Link = currentBestQualiSelect[4]
+                    Alt_Link_Quali = f"{currentBestQuali['high']},{currentBestQuali['width']},{currentBestQuali['size']}"
+                    updateList.append("Link = '"+Link+"', Link_Quali = '"+Link_Quali+"' , Alt_Link = '"+Alt_Link+"', \
+                                    Alt_Link_Quali = '"+Alt_Link_Quali+"' ,")
+  
+            #check alternativlink
+            elif newQualiSum >  currentAltQuali['sum']:
+                #wenn gleichoder mehr pixel                 
+                if  newQualiSum > currentAltQuali['sum'] or \
+                    newQualiSum == currentAltQuali['sum'] and hsl is False and size > currentAltQuali['size']:
+                    #wenn mehr pixel oder gleichvielPixel aber mehr size = update new link to alternative
+                    print("update") # update to new url 
+                
+                    #here update alternative_Quali              
+                    Alt_Link = newlink
+                    Alt_Link_Quali = f"{height},{width},{size}"
+                    updateList.append("Alt_Link = '"+Alt_Link+"', Alt_Link_Quali = '"+Alt_Link_Quali+"' ,")
+                    print("hi")
+       
+
+        if len(updateList) <1: 
+            sql = "nothing better found"
+        else:
+            sql_start = "UPDATE "+table+"  SET "
+            sql_middle = " ".join(updateList)
+            sql = sql_start + sql_middle[:-1] +  "WHERE id = "  + self.id
+        
+            self.db.update(sql = sql)
+            #if downloadFirstFound is True :  self.notifyJdownloader(id,table)
+        self.db.insertLog(modul,text="InsertLink: " + sql, lvl="2" ,info="qualicheckerUndAddlink")
+
+
     def checkUrl(self,link,id,modul,innerUrl=False):
             filemanager = FileManager()
             reqCode = requests.head(link).status_code
             if reqCode != 200: raise linkBroken 
-            quality = []
-            quality.append(0)
-
+            table="MovieRequests" if  self.isMovie is True  else "EpisodeRequests"             
             quality = filemanager.checkVideoSize(link)
-            print("found link: " + link)
-            intNum = int(quality[0])
-            #ERROR # fix Quali handler
-            if intNum > int(curremtBestQuali[0]):
-                temp= ""
-            elif intNum > int(curremtAltQuali[0]):
-                temp= "temp_"
-            else:
-                return "betterFound"     
-            
-            status= modul +"_done" 
-            table="movierequest" if  self.isMovie is True  else "episoderequest" 
-            
-            sql = "UPDATE `"+table+"` SET `"+temp+"link` = '"+link+"', `"+temp+"link_quali`= '"+quality+"', \
-            `Dow_Status` = '"+status+"'  WHERE `id` = "  + id
-            
-            self.db.update(sql = sql)
-            self.db.insertLog(modul,text="checkUrl: " + link, lvl="2" ,info="reqCode")
+            self.InsertLink(link,id,modul,table,quality[0],quality[1],quality[2])
+
+           
 
 
       #  command ="function click(x, y) {const ev = new MouseEvent('click', {bubbles: true,cancelable: true,clientX: x,clientY: y}); document.elementFromPoint(x, y).dispatchEvent(ev); } click("+str(x)+", "+str(y)+");"
@@ -351,16 +473,21 @@ class SeleniumScraper(object):
  #   hi = actions1.move_by_offset( round(name['width'] / 2), round(name['height'] / 2))
 
     def clickMiddle(self,howOft=1,xy=[]):
-        if len(xy) <= 1 :
+        self.browser.switch_to.default_content()
+        self.browser.execute_script("window.scrollTo(0, 0)")
+        if len(xy) <= 1 :#
             display = self.browser.get_window_size() 
             xy.append(round(display['width'] / 2))
             xy.append(round(display['height'] / 2))
         action = ActionChains(self.browser)
         mouse =  action.move_by_offset(xy[0],xy[1])
-        for y in range(0,howOft):
-            mouse.click().perform()
-            print("clickDone")
-            time.sleep(3)
+        try:
+            for y in range(0,howOft):
+                mouse.click().perform()
+                print("clickDone")
+                time.sleep(3)
+        except:
+            print("click Error")
         mouse =  action.move_by_offset(-xy[0],-xy[1])
 
 
@@ -474,6 +601,18 @@ class SeleniumScraper(object):
     #     #sorted_elements = sorted(sorted_elements, key=lambda x: [hoster[0] for hoster in self.hoster if hoster[0] == x][0])
 
 
+    def notifyJdownloader(self,id=6,table="MovieRequestss"):
+        sql = "select EpiReqId,FolderPath,File_Name,isMovie,Link, COALESCE(Alt_Link, Hls_Link) from WorkToDo Where id =" + id
+        fileList = self.db.select(my_query =sql) #   Where serien_id = '6547' AND pid is NULL OR pid = '' AND Status != 'download'
+        api = Api()
+#Todo: select link and alt link / if alt link empty try hsl 
+    # -Download-both -Check-Coropt-Status 
+        for file in fileList:
+            filenaming, ext = os.path.splitext(file[2])
+            quali = " - 720p "
+            pid = api.addLinkToJD(link=file[5],filename=filenaming + quali + ext,path=file[1])
+            #sql = "UPDATE `"+table+"` SET `Dow_Status` = 'start_download' WHERE `id` = '" + str(id) +"'"  
+           #  self.db.db.update(sql)
 
     def sortHosterElements(self, elements, comeFrom="bs", maxLen=3):
         sorted_elements = []
@@ -528,15 +667,19 @@ class SeleniumScraper(object):
             self.selectDropdown(By.ID, "rel",0)
          #   self.selectDropdown(By.ID, "rel",0)
 
-        hosterElementList = []
+
         hosterDone = []
         try:            
             while self.found <= 2 :
-                self.selectDropdown(By.ID, "rel",counter)
+                hosterElementList = []
+                counter += 1
+                self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
+                time.sleep(1)
+                self.selectDropdown(By.ID, "rel",counter -1)
                 hosterElementList = self.browser.find_elements(By.ID,"stream-links")
                 hosterElementList = self.sortHosterElements(hosterElementList,"stramkiste")
                 self.checkHoster(hosterElementList,isTestCase,modul)
-                counter += 1 
+                 
         except:
             raise notAvailableError
         #test without found
@@ -558,6 +701,7 @@ class SeleniumScraper(object):
                 xy.append(round(cacheXy['height'] * 3/4))
                 self.findVideoSrc(isTestCase,modul, xy,hoster[1],hoster[2] )
             except:
+                self.browser.switch_to.default_content()
                 continue
             #here something to loop and call recorslsvy with counter 
 
@@ -706,8 +850,6 @@ class SeleniumScraper(object):
         self.clickMiddle(4,xy)
         self.link = ""
         name = name.lower()
-       # hostername, nestedVideo,
-        self
         if name == "voe":
             time.sleep(10)
             tempIframe =  self.browser.find_element(By.TAG_NAME,"iframe")  
@@ -718,7 +860,8 @@ class SeleniumScraper(object):
             if nestedVideo is False : self.browser.switch_to.default_content()
             self.browser.find_elements(By.TAG_NAME,"video")
             if len(self.link) <= 0 :
-                self.findNestedVideo() 
+                self.functionWithTimout2(self.findNestedVideo,10 )
+                
         # if video needs to open in an seperate tab 
         if(modul == "skiste" or modul == "bs.to"): 
             if self.link != "" and self.link != []:
@@ -726,7 +869,6 @@ class SeleniumScraper(object):
                 self.browser.switch_to.window('tab' + str(self.run))
                 time.sleep(2)
                 self.getWaitUrl(self.link,10)
-                time.sleep(5)
 #        links = []
  #       links.append(self.browser.current_url)
         if isTestCase : return self.browser.current_url 
@@ -740,7 +882,7 @@ class SeleniumScraper(object):
             tempList = [element for element in self.hoster if 'voe' not in element[0]]
             self.hoster = tempList
         except:
-            return False
+            print("false error")
         # close the second tab
         #self.browser.close()
         # switch back to the first tab
@@ -761,7 +903,7 @@ if __name__ == "__main__":
     #         time.sleep(10)
     #         print("Fail")
     #localHosterList = fetcher.checkHls()
-    fetcher.check_Streamkiste("avengers-endgame", imdb="tt2250912", isMovie="/movie/", season="04",episode="04")#g
+    fetcher.check_Streamkiste("Spiel mir das Lied vom Tod", imdb="tt0064116", isMovie="/movie/", season="04",episode="04")#g
    # fetcher.check_Bs("Das Mädchen im Schnee",season="01",episode="01",episodeName="Folge 1")#g
    # hi = fetcher.checkSTo("Breaking bad", imdb="tt0903747",  season="04",episode="04")#g
     #installUblock

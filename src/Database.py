@@ -117,6 +117,16 @@ class Database(object):
         except mysql.connector.Error as error:
             print("Failed to select MySQL table {}".format(error))
         return
+    def getCurrentBestQuali(self,id,table):
+        try:
+            sql = "select Link_Quali, Alt_Link_Quali, Alt_Link, Hls_Link , Link from "+table+" WHERE id = '" + id +"'"
+            self.cursor.execute(sql)
+            hosterList= self.cursor.fetchone()
+            return hosterList  # return array of Values
+            
+        except mysql.connector.Error as error:
+            print("Failed to select MySQL table {}".format(error))
+        return
 
     def select(self, my_query = "", returnOnlyOne = False, table="", select= "*",  where ="`status` = 'new'",clean=False):
         try:
@@ -160,9 +170,12 @@ class Database(object):
 if __name__ == "__main__":
     print("start")
     database = Database()
-    database.insertLog(modul="test",text="testDocer" ,lvl="test",info="testDocer")
-    result = database.select(my_query = "SELECT text FROM Logs WHERE info ='testDocer'")
-    print(result)
+    hi = database.getCurrentBestQuali("6", "MovieRequests")
+    
+    
+    # database.insertLog(modul="test",text="testDocer" ,lvl="test",info="testDocer")
+    # result = database.select(my_query = "SELECT text FROM Logs WHERE info ='testDocer'")
+    #print(result)
     print("done")
     #database.__del__()
 #https://github.com/neldomarcelino/museuonline/blob/a06290eaa1874b365af9e58ae2ccbac6eca07f65/src/database/database.py

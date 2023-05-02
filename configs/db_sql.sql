@@ -124,7 +124,7 @@ FROM
    ADD COLUMN Alt_Link TEXT,
    ADD COLUMN Alt_Link_Quali VARCHAR(255),
    ADD COLUMN Error VARCHAR(30),
-   ADD COLUMN Info VARCHAR(255);
+   ADD COLUMN Info TEXT;
 
     ALTER TABLE  `Ombi`.`TvRequests`
    ADD COLUMN Watcher VARCHAR(255);
