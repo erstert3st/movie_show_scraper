@@ -194,22 +194,23 @@ class SeleniumScraper(object):
             raise Exception("Function timed out")
         else:
             return result
-
-    def functionWithTimout(self, function,timeout=300):
-        scrapperThread = threading.Thread(target=function) # start movie if it takes to long 
-        scrapperThread.setName("scrapperThreadTimeoutFunction")
-        scrapperThread.start()
-        # wait for 5 minutes or until the thread has finished
-        self.waitCheckThread(scrapperThread,timeout)
-        if scrapperThread.is_alive():
-            scrapperThread._running = False  # Stop the thread
-            raise Exception("Function timed out")
-
-
+        
     def waitCheckThread(self,thread,timeout=300):
         while thread.is_alive() and timeout > 0:
             thread.join(1)
             timeout -= 1 
+    # def functionWithTimout(self, function,timeout=300):
+    #     scrapperThread = threading.Thread(target=function) # start movie if it takes to long 
+    #     scrapperThread.setName("scrapperThreadTimeoutFunction")
+    #     scrapperThread.start()
+    #     # wait for 5 minutes or until the thread has finished
+    #     self.waitCheckThread(scrapperThread,timeout)
+    #     if scrapperThread.is_alive():
+    #         scrapperThread._running = False  # Stop the thread
+    #         raise Exception("Function timed out")
+
+
+
     def checkSwitchTab(self):
         # Get the list of open window handles
         window_handles = self.browser.window_handles
