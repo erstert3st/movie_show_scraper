@@ -34,7 +34,7 @@ class FileManager(object):
 
         if size == 0: raise videoBroken 
         sizeMB =  int(int(size)/1048576) # second int remove decimal 
-        fileData = [metaData["streams"][0]['high'] , metaData["streams"][0]['width'] , sizeMB ]
+        fileData = [metaData["streams"][0]['height'] , metaData["streams"][0]['width'] , sizeMB ]
         return fileData
 
     def checkValidvideo(self,path,db,table,id):

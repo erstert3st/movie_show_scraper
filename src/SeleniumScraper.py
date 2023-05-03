@@ -172,33 +172,33 @@ class SeleniumScraper(object):
             self.browser.quit()
         print("close")
     
-    def functionWithTimout2(self, function,timeout=300):
+
+
+    def functionWithTimout2(self,function, timeout=300):
         result = None
+        error = None
         stop_event = threading.Event()
 
         def target():
-            nonlocal result
-            for i in range(10):
-                if stop_event.is_set():
-                    return
-                time.sleep(1)
-            result = function()
-    
+            nonlocal result, error
+            try:
+                result = function()
+            except Exception as e:
+                error = e
+            finally:
+                stop_event.set()
+
         thread = threading.Thread(target=target)
         thread.start()
-        self.waitCheckThread(thread,10) # Wait for 5 minutes (300 seconds)
 
-        if thread.is_alive():
-            stop_event.set()  # Signal the thread to stop running
-            thread.join()  # Wait for the thread to exit
-            raise Exception("Function timed out")
+        if not stop_event.wait(timeout):
+            # Timeout occurred
+            raise notAvailableError("Function timed out")
+
+        if error is not None:
+            raise error
         else:
             return result
-        
-    def waitCheckThread(self,thread,timeout=300):
-        while thread.is_alive() and timeout > 0:
-            thread.join(1)
-            timeout -= 1 
     # def functionWithTimout(self, function,timeout=300):
     #     scrapperThread = threading.Thread(target=function) # start movie if it takes to long 
     #     scrapperThread.setName("scrapperThreadTimeoutFunction")
@@ -457,13 +457,13 @@ class SeleniumScraper(object):
         self.db.insertLog(modul,text="InsertLink: " + sql, lvl="2" ,info="qualicheckerUndAddlink")
 
 
-    def checkUrl(self,link,id,modul,innerUrl=False):
+    def checkUrl(self,link,modul,innerUrl=False):
             filemanager = FileManager()
             reqCode = requests.head(link).status_code
             if reqCode != 200: raise linkBroken 
             table="MovieRequests" if  self.isMovie is True  else "EpisodeRequests"             
             quality = filemanager.checkVideoSize(link)
-            self.InsertLink(link,id,modul,table,quality[0],quality[1],quality[2])
+            self.InsertLink(link,modul,table,quality[0],quality[1],quality[2])
 
            
 
@@ -476,12 +476,15 @@ class SeleniumScraper(object):
     def clickMiddle(self,howOft=1,xy=[]):
         self.browser.switch_to.default_content()
         self.browser.execute_script("window.scrollTo(0, 0)")
+        action = action = None
         if len(xy) <= 1 :#
             display = self.browser.get_window_size() 
             xy.append(round(display['width'] / 2))
             xy.append(round(display['height'] / 2))
         action = ActionChains(self.browser)
+        time.sleep(1)
         mouse =  action.move_by_offset(xy[0],xy[1])
+        time.sleep(1)
         try:
             for y in range(0,howOft):
                 mouse.click().perform()
@@ -861,7 +864,7 @@ class SeleniumScraper(object):
             if nestedVideo is False : self.browser.switch_to.default_content()
             self.browser.find_elements(By.TAG_NAME,"video")
             if len(self.link) <= 0 :
-                self.functionWithTimout2(self.findNestedVideo,10 )
+                self.functionWithTimout2(self.findNestedVideo,20 )
                 
         # if video needs to open in an seperate tab 
         if(modul == "skiste" or modul == "bs.to"): 
