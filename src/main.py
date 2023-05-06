@@ -52,7 +52,7 @@ class main(object):
 
     def getVideoLinks(self):
         db = Database()        
-        waiting_Videos = db.select(table="WorkToDo" ,where="isMovie = '1' and Dow_Status IS NULL ORDER BY RAND()")
+        waiting_Videos = db.select(table="WorkToDo" ,where="isMovie = '1' and Dow_Status  != 'downloaded'  ORDER BY RAND()")
      #   waiting_Videos = db.select(table="WorkToDo" ,where="isMovie = '0'")
         api = Api()
         downloader = Main_scrapper(db)

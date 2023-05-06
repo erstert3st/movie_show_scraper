@@ -21,18 +21,21 @@ from xvfbwrapper import Xvfb
 from datetime import datetime, timedelta
 
 class SeleniumScraper(object):
-    def __init__(self,id= "",ua="", anwesend=False,hoster=[],db=""):
+    def __init__(self,id= "",ua="",isMovie=False, anwesend=False,hoster=[],db=""):
         environ['LANGUAGE'] = 'en_US'
         self.url = ""
         self.found = 0
         self.hls_found = False 
+        self.updateHosterFirstRun = True 
         self.db = db if db != "" else Database() 
         self.hoster = hoster if len(hoster) > 1 else self.db.getHoster()
         self.ua = ua if len(ua) > 0 else "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_2) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.6 Safari/537.11"
-        self.found = {"720p": False, "1080p": False, "altLink": False}#my_dict.update({"b":True})
+        #self.found = {"720p": False, "1080p": False, "altLink": False}#my_dict.update({"b":True})
         self.xy=[round(random.randint(1450,1550),-1) , round(random.randint(800,860),-1)]
         self.run = 0
-        self.id = str(id) 
+        self.id = id
+        self.isMovie=isMovie
+ 
         if len(ua) > 1:
             self.ua = ua
         
@@ -51,7 +54,8 @@ class SeleniumScraper(object):
         try:self.browser = uc.Chrome(user_data_dir=self.user_data_dir,options=self.options)
         except:
             print("chrome Bugged! find solution !")
-            exit(1) # break Docker Container:DDDDD or riochtige Lösung mit fang von KOMPLETT neu an 
+            #loggen
+            os.kill() # break Docker Container:DDDDD or riochtige Lösung mit fang von KOMPLETT neu an 
         self.browser.execute_script("window.open('','tab0');window.open('','tab1');window.open('','tab2');window.open('','tab3');window.open('','tab4');window.open('','tab5');")    
         self.browser.close()
         self.browser.switch_to.window('tab0')
@@ -61,6 +65,7 @@ class SeleniumScraper(object):
         self.browser.switch_to.window(self.browser.window_handles[0])
         self.browser.set_window_size(  self.xy[0],   self.xy[1])
         self.getWaitUrl(self.url,3)  # add lang
+        self.browser.execute_script("document.body.style.zoom='100%'")
       #  self.browser.execute_script("window.open('');")
         return True 
     
@@ -230,11 +235,6 @@ class SeleniumScraper(object):
         self.browser.get(url)
         time.sleep(timer)
     
-    def getHoster(self):
-        if self.found.get['720p']:
-            return self.hoster
-        elif self.found.get['1080p']:
-            return self.hoster[:3] #check  and may thing about something that alt link is secure 
        
     def checkTable(self, checkName,table,episode,episodeName=""):
         for row in table:
@@ -325,8 +325,9 @@ class SeleniumScraper(object):
             raise searchError 
 
         video = videos[0]
-        for iterator in range(1,5):
-            if video.get_attribute('readyState') == '0': self.clickWait(element=bodys[0],howOften=2)
+        if video.get_attribute('readyState') == '0':
+            for iterator in range(1,5):
+                if video.get_attribute('readyState') == '0': self.clickWait(element=bodys[0],howOften=2)
 
         
         if video.get_attribute('readyState') == '4':
@@ -416,7 +417,7 @@ class SeleniumScraper(object):
         else:
             # check if link is better than old one        
             currentAltQuali = self.splitQuali(currentBestQualiSelect[1])            
-            newQualiSum = height + width
+            newQualiSum = str(height + width)
             #if neu  mehr pixel als bestes jetzige  
             if newQualiSum >= currentBestQuali['sum']:
                 #wenn gleichoder mehr pixel     /            
@@ -426,7 +427,7 @@ class SeleniumScraper(object):
                     Link = newlink
                     Link_Quali = f"{height},{width},{size}"
                     Alt_Link = currentBestQualiSelect[4]
-                    Alt_Link_Quali = f"{currentBestQuali['high']},{currentBestQuali['width']},{currentBestQuali['size']}"
+                    Alt_Link_Quali = f"{currentBestQuali['height']},{currentBestQuali['width']},{currentBestQuali['size']}"
                     updateList.append("Link = '"+Link+"', Link_Quali = '"+Link_Quali+"' , Alt_Link = '"+Alt_Link+"', \
                                     Alt_Link_Quali = '"+Alt_Link_Quali+"' ,")
   
@@ -472,11 +473,12 @@ class SeleniumScraper(object):
   #     # name = self.browser.get_window_size() 
   # self.browser.execute_script(command) round(name['width'] / 2)
  #   hi = actions1.move_by_offset( round(name['width'] / 2), round(name['height'] / 2))
-
+    #x = [730, 632]
+    #x = [630, 632]
     def clickMiddle(self,howOft=1,xy=[]):
-        self.browser.switch_to.default_content()
+        #self.browser.switch_to.default_content()
         self.browser.execute_script("window.scrollTo(0, 0)")
-        action = action = None
+        action = mouse = None
         if len(xy) <= 1 :#
             display = self.browser.get_window_size() 
             xy.append(round(display['width'] / 2))
@@ -491,7 +493,12 @@ class SeleniumScraper(object):
                 print("clickDone")
                 time.sleep(3)
         except:
-            print("click Error")
+            print("weird bug lets try again xD ")
+            time.sleep(1)
+            for y in range(0,howOft):
+                mouse.click().perform()
+                print("clickDone")
+                time.sleep(3)
         mouse =  action.move_by_offset(-xy[0],-xy[1])
 
 
@@ -634,7 +641,7 @@ class SeleniumScraper(object):
                 if len(hosterStr) > 0:
                     updateHoster.append((hosterStr, 99, 'new', comeFrom))
 
-        if(len(updateHoster) > 0):
+        if(len(updateHoster) > 0) and self.updateHosterFirstRun is True:
             print("update db") 
             sql = "insert into hoster(name, priority, status,regex3) values (%s, %s, %s , %s)" 
             self.db.insertMany(sql, updateHoster)
@@ -649,7 +656,6 @@ class SeleniumScraper(object):
     def check_Streamkiste(self,querry, imdb, isMovie="/movie/", season="", episode="" ,isTestCase=False,counter=0): # getLinks for no douple code 
         modul = "skiste"
         self.found = 0 
-        self.isMovie=False
         if(len(imdb) < 1):
             imdb = querry
         url =  "https://streamkiste.tv"
@@ -677,8 +683,10 @@ class SeleniumScraper(object):
             while self.found <= 2 :
                 hosterElementList = []
                 counter += 1
+                self.browser.refresh()
+                self.browser.switch_to.default_content()
                 self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
-                time.sleep(1)
+                time.sleep(2)
                 self.selectDropdown(By.ID, "rel",counter -1)
                 hosterElementList = self.browser.find_elements(By.ID,"stream-links")
                 hosterElementList = self.sortHosterElements(hosterElementList,"stramkiste")
@@ -693,16 +701,20 @@ class SeleniumScraper(object):
     
     def checkHoster(self,hosterElementList,isTestCase,modul):
         for hoster in hosterElementList:
+            self.browser.execute_script("window.scrollTo(0,document.body.scrollHeight)")
             self.clickWait("","", 10,hoster[0])
             self.browser.execute_script("window.scrollTo(0, 0)")
             self.browser.execute_script("document.body.style.zoom='100%'")
+            self.browser.switch_to.default_content()
             self.browser.switch_to.frame("iframe")
             self.captchaCheck(By.CSS_SELECTOR,"body > div > div:nth-child(2) > iframe")
             try:#
                 xy = []
                 cacheXy = self.browser.get_window_size()
-                xy.append(round(cacheXy['width'] / 2))
-                xy.append(round(cacheXy['height'] * 3/4))
+                xy = [550, 632]
+               # xy.append(round(cacheXy['height'] * 3/4))
+                #xy.append(round(cacheXy['width'] / 2))
+                #xy.append(round(cacheXy['height'] * 3/4))
                 self.findVideoSrc(isTestCase,modul, xy,hoster[1],hoster[2] )
             except:
                 self.browser.switch_to.default_content()
@@ -817,27 +829,29 @@ class SeleniumScraper(object):
             self.clickWait(By.CSS_SELECTOR,"body > div.container-fluid > div.container-fluid.entries > nav.navbar.navbar-static-top.navbar-search > div > ul > li > ul > li:nth-child(3) > a",2)
             #self.clickWait(By.XPATH,"/html/body/div[3]/div[2]/nav[1]/div/ul/li/ul/li[3]",2)       
            # self.browser.find_element(By.XPATH,"/html/body/div[3]/div[2]/nav[1]/div/ul/li/a")
-        self.searchAndClick(search= "body > div.container-fluid > div.container-fluid.entries > nav.navbar.navbar-static-top.navbar-search > div > input[type=text]", selector=By.CSS_SELECTOR, querry=movieName)        
-        
+        #self.searchAndClick(search= "body > div.container-fluid > div.container-fluid.entries > nav.navbar.navbar-static-top.navbar-search > div > input[type=text]", selector=By.CSS_SELECTOR, querry=movieName)        
+        self.getWaitUrl("https://cine.to/#tt0"+ imdb[2:] ,3)
+        #Todo ad name check 
         print(imdb)
-        found = False #make go on next page 
-        x =0
-        while found == False and x <= 5:
-            x +=1
-            resultList = self.browser.find_elements(By.CSS_SELECTOR,"body > div.container-fluid > div.container-fluid.entries > section > a ")
-            self.browser.save_screenshot("b.png")
-            for element in  resultList :
-                if imdb in element.get_attribute('href'):
-                    self.clickWait("","", 3,element)
-                    #self.adCheck()
-                    found = True
-                    break
-            if found == False: self.clickWait(By.CSS_SELECTOR,"body > div.container-fluid > div.container-fluid.entries > nav:nth-child(3) > center > ul:nth-child(3) > li.next > a > i").click()
-        if found is False: raise searchError
+        # while found == False and x <= 5:
+        #     x +=1
+        #     resultList = self.browser.find_elements(By.CSS_SELECTOR,"body > div.container-fluid > div.container-fluid.entries > section > a ")
+        #     self.browser.save_screenshot("b.png")
+        #     for element in  resultList :
+        #         if imdb in element.get_attribute('href'):
+        #             self.clickWait("","", 3,element)
+        #             #self.adCheck()
+        #             found = True
+        #             break
+      
+        # if found is False: raise searchError
         hosterElementListwithJunk = self.browser.find_element(By.CSS_SELECTOR,"#entry > div > div > div.modal-body").find_elements(By.TAG_NAME , "li")
+
         #remove empty 
         hosterElementList = [hoster.find_element(By.TAG_NAME, "span") for hoster in hosterElementListwithJunk if len(hoster.find_elements(By.TAG_NAME, "span")[0].text) > 1]        
         sortedElementList = self.sortHosterElements(hosterElementList,modul)
+        if len(sortedElementList) < 1:
+            raise notAvailableError
         for hoster in sortedElementList:
             self.clickWait("","", 5,hoster[0])
             if "cine.to/#t" in self.browser.current_url: self.checkSwitchTab()
@@ -854,15 +868,14 @@ class SeleniumScraper(object):
         self.clickMiddle(4,xy)
         self.link = ""
         name = name.lower()
-        if name == "voe":
-            time.sleep(10)
+        if name in ["voe", "upstream","streamsb"] and modul == "skiste":
+            time.sleep(5)
             tempIframe =  self.browser.find_element(By.TAG_NAME,"iframe")  
             self.link =  tempIframe.get_attribute('src')       
-        elif modul == "cine":
-            print("may edit these")
+        elif modul == "cine": # direct Link
+             self.link = self.browser.current_url
         else:
             if nestedVideo is False : self.browser.switch_to.default_content()
-            self.browser.find_elements(By.TAG_NAME,"video")
             if len(self.link) <= 0 :
                 self.functionWithTimout2(self.findNestedVideo,20 )
                 
@@ -878,20 +891,22 @@ class SeleniumScraper(object):
         if isTestCase : return self.browser.current_url 
             #do som in 2 tab 
         try:
-            if(name in ["voe", "upstream"]):
+            if name in ["voe", "upstream","streamsb"]:
                 #Todo fix hls
                 self.checkHls(self.browser.current_url,modul,selector="body > div:nth-child(2) > script:nth-child(12)")
             else:
                 self.checkUrl(self.browser.current_url,modul,True)
-            tempList = [element for element in self.hoster if 'voe' not in element[0]]
+            tempList = [element for element in self.hoster if name not in element[0]]
             self.hoster = tempList
+            self.updateHosterFirstRun = False
         except:
             print("false error")
         # close the second tab
         #self.browser.close()
-        # switch back to the first tab
-        self.browser.switch_to.window(self.browser.window_handles[0])
-        self.hoster.remove(name)
+
+        # switch back to the first tab if switched
+        if(modul == "skiste" or modul == "bs.to"):  self.browser.switch_to.window(self.browser.window_handles[0])
+        #self.hoster.remove(name)
         return True
 
 

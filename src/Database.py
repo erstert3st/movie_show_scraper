@@ -90,11 +90,10 @@ class Database(object):
         values = (modul ,text ,lvl,info) 
         self.insert(sql,values)
 
-    def uptError(self,id,modul,status,table="EpisodeRequests",error="lastCatch: ",info="Catch last try Catch may look into"):
-        error = error + modul
-        sql = "UPDATE "+table+"SET (Dow_Status, Error, info ) values (%s, %s, %s) WHERE id = "   + id  
-        values = (status ,error ,info) 
-        self.update(sql,values)
+    def uptError(self,id,status,error="lastCatch: ",info="workingOnIt",table="EpisodeRequests"):
+        sql = "UPDATE "+table+" SET Dow_Status = '"+status+"', Error = '"+error+"', info= '"+info+"'  WHERE id = "   + id  
+        self.update(sql = sql)
+        return status
 
     def update(self, table="", status="", id="", sql="", error=""):
         try:

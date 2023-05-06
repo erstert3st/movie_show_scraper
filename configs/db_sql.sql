@@ -115,7 +115,7 @@ FROM
 
     ALTER TABLE  `Ombi`.`MovieRequests`
     ALTER TABLE  `Ombi`.`EpisodeRequests`
-    ADD COLUMN Dow_Status VARCHAR(255),
+    ADD COLUMN Dow_Status VARCHAR(255)  DEFAULT 'new';,
    ADD COLUMN Check_Quali VARCHAR(255),
    ADD COLUMN Bs_Link TEXT,
    ADD COLUMN Link TEXT,

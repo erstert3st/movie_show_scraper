@@ -25,62 +25,67 @@ class Main_scrapper(object):
         season=objekt[5]
         episode=objekt[6]
         episodeName= objekt[10]
-        id=objekt[0] 
-        try:
-            try:
-                if status == "new" or "skiste" :SeleniumScraper(id).check_Streamkiste(movieName=name,imdb=imdb, isMovie=isMovie, season=season,episode=episode)
+        id=str(objekt[0]) 
+        try: #movie and serie
+            if status in ["new","sKiste", None] :
+                try:
+                        SeleniumScraper(id,isMovie=movieBool).check_Streamkiste(name,imdb, isMovie, season,episode)
+                        status = self.db.uptError(id,"sKiste","skiste_done",table=table)
+                except searchError or notAvailableError:   
+                    print(" #status streamkiste done AND Loggen")
             
-            except searchError or notAvailableError:   
-                print(" #status streamkiste done AND Loggen")
-        
-            except: # second try
-                try:
-                    SeleniumScraper(id).check_Streamkiste(name,imdb, isMovie, season,episode)
-                except:
-                    self.db.uptError(objekt[0],"sKiste","skiste_done",table)
-                
+                except: # second try
+                    try:
+                        SeleniumScraper(id,isMovie=movieBool).check_Streamkiste(name,imdb, isMovie, season,episode)
+                        status = self.db.uptError(id,"sKiste","skiste_done",table=table)
+                    except:
+                        status = self.db.uptError(id,"cine","skiste_error","Error in main_scrapper skiste",table)
 
-            if movieBool:
+
+
+
+            #only movies
+            if movieBool and  status == "sKiste" or "cine" : 
                 try:
-                    if status == "skiste" or "cine" : SeleniumScraper(id).checkCine(name,imdb)
+                    test = SeleniumScraper(id,isMovie=movieBool).checkCine(name,imdb)
+                    status = self.db.uptError(id,"cine","cine_done",table=table)
+                    print("iam h3e" + str(test))
+
                 except searchError or notAvailableError:    
                     print("s")
+                except: # second try
+                    try:
+                        SeleniumScraper(id,isMovie=movieBool).checkCine(name,imdb)
+                    except:
+                        status = self.db.uptError(id,"cine","cine_error","Error in main_scrapper cine",table)
+                return True
+
+           
+           #only serie
+            elif movieBool is False:
+            
+                try:
+                    if status == "skiste" or "bs": SeleniumScraper(id,isMovie=movieBool).check_Bs(name,season,episode,episodeName,link)
+                except searchError or notAvailableError:    
+                    print(" #status bs done AND Loggen")
                 except:
                     try:
-                        SeleniumScraper(id).checkCine(name,imdb)
+                        SeleniumScraper(id,isMovie=movieBool).check_Bs(name,season,episode,episodeName,link)
                     except:
-                        self.db.uptError(objekt[0],"cine","cine_done",table)
-                return True
-            self.db.uptError(objekt[0],"scrapper","download",table)
+                        status = self.db.uptError(id,"bs","bs_error","Error in main_scrapper cine",table)
+                    status = self.db.uptError(id,"bs","bs_done",table=table)
 
-           
-           
-           
-           
-            try:
-                if status == "skiste" or "bs": SeleniumScraper().check_Bs(name,season,episode,episodeName,link)
-            except searchError or notAvailableError:    
-                print(" #status bs done AND Loggen")
-            except:
-                try:
-                    SeleniumScraper().check_Bs(name,season,episode,episodeName,link)
+                try:    
+                    if status == "bs_done" or "s.to": SeleniumScraper(id,isMovie=movieBool).checkSTo(name, imdb,season,episode)
+                except searchError or notAvailableError:    
+                    print(" #status bs done AND Loggen")
                 except:
-                    self.db.uptError(objekt[0],"bs","bs_done",table)
-            
-
-
-
-
-            try:    
-                if status == "bs_done" or "s.to": SeleniumScraper().checkSTo(name, imdb,season,episode)
-            except searchError or notAvailableError:    
-                print(" #status bs done AND Loggen")
-            except:
-                try:
-                    SeleniumScraper().checkSTo(name, imdb,season,episode)
-                except:
-                    self.db.uptError(objekt[0],"s.To","s.to_done",table)
-        
+                    try:
+                        SeleniumScraper(id,isMovie=movieBool).checkSTo(name, imdb,season,episode)
+                    except:
+                        status = self.db.uptError(id,"s.To","s.to_error","Error in main_scrapper sTo",table)
+                status = self.db.uptError(id,"s.To","s.to_done", table=table)
+    
 
 
         except captchaLock:
