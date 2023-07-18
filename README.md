@@ -1,4 +1,4 @@
-# movie_show_scraper
+# movie_show_scraper NOT complete yet, only Movies works!!!
 
 ** Downloads movies, TV shows- seasons, or episode but you need your own captcha solution!**
 
